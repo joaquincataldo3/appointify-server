@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { YearDaysService } from './year_days.service';
-import { YearDaysController } from './year_days.controller';
+import { YearDaysService } from './services/year_days.service';
+import { YearDaysController } from './controllers/year_days.controller';
 
 @Module({
   providers: [YearDaysService],

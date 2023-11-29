@@ -1,0 +1,82 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// esta es el datasource para db
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User_Role {
+  id Int @default(autoincrement()) @id
+  role_name String
+
+  // relations
+  users User[]
+}
+
+model User {
+  id Int @default(autoincrement()) @id
+  username String @unique
+  first_name String
+  last_name String
+  email String @unique
+  password String
+
+  // relations
+  user_role User_Role @relation(fields: [user_role_id], references: [id])
+  user_role_id Int 
+
+  professionalAppointments Appointment[] @relation("ProfessionalAppointment")
+  clientAppointments Appointment[] @relation("ClientAppointment") 
+
+  // tablename
+  @@map("users")
+}
+
+model Hour {
+  id Int @default(autoincrement()) @id
+  hour_begin DateTime
+  hour_end DateTime
+
+  // relations
+  appointment Appointment[] @relation("Hour")
+
+  // tablename
+  @@map("hours")  
+
+}
+
+model YearDay {
+  id Int @default(autoincrement()) @id
+  day DateTime
+
+  // relations
+  appointments Appointment[] @relation("YearDay")
+
+  // tablename
+  @@map("year_days")
+
+}
+
+model Appointment {
+  id Int @default(autoincrement()) @id
+  
+  // relations
+  client User @relation("ProfessionalAppointment" ,fields: [client_id], references: [id])
+  client_id Int
+
+  professional User @relation("ClientAppointment" ,fields: [professional_id], references: [id])
+  professional_id Int
+
+  yearDay YearDay @relation("YearDay", fields: [year_day_id], references: [id])
+  year_day_id Int
+
+  hour Hour @relation("Hour", fields: [hour_id], references: [id])
+  hour_id Int
+
+}

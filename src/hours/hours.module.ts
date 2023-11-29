@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { HoursService } from './hours.service';
+import { HoursService } from './services/hours.service';
 import { HoursController } from './controllers/hours.controller';
 
 @Module({

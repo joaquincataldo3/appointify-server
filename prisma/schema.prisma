@@ -33,6 +33,7 @@ model User {
 
   professionalAppointments Appointment[] @relation("ProfessionalAppointment")
   clientAppointments Appointment[] @relation("ClientAppointment") 
+  tokens TokenBlacklist[] @relation("UserToken")
 
   // tablename
   @@map("users")
@@ -85,6 +86,8 @@ model TokenBlacklist {
   id Int @default(autoincrement()) @id
   token String
   expiry_date DateTime
+  user User @relation("UserToken", fields: [user_id], references: [id])
+  user_id Int
 
   @@map("tokens_blacklist")
 }

@@ -1,11 +1,11 @@
-import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ExecutionContext, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { LogoutDto, SignUpDto, UserSignInDto } from '../dto/dto';
 import { UsersService } from 'src/users/services/users.service';
 import { compare, hash } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SignTokenInterface } from '../interfaces/interfaces';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 import { User } from '@prisma/client';
 import { DatabaseService } from 'src/database/services/database.service';
@@ -44,7 +44,6 @@ export class AuthService {
 
         const { username, email, password } = signUpDto;
         const userExists = await this.usersService.getUserByField(username);
-        console.log(userExists)
         if (userExists.length > 0) {
             throw new ConflictException('The user already exists in the database')
         }
@@ -93,9 +92,18 @@ export class AuthService {
 
     }
 
-    async logout(logoutDto: LogoutDto, res: Response): Promise<boolean> {
+    async logout(logoutDto: LogoutDto, res: Response, context: ExecutionContext): Promise<boolean> {
+        // we access to the request object
+        const request = context.switchToHttp().getRequest();
+        const user = request.user;
         const { token } = logoutDto;
-        await this.tokenBlacklistService.createToken(token);
+        const { id } = user;
+        const createTokenInBlacklist = {
+            tokenToCreate: token,
+            userId: id
+        }
+        await this.tokenBlacklistService.deleteTokenAssociatedWithUser(id);
+        await this.tokenBlacklistService.createToken(createTokenInBlacklist);
         res.clearCookie(this.cookieName);
         return true;
     }

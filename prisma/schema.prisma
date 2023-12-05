@@ -80,3 +80,11 @@ model Appointment {
   hour_id Int
 
 }
+
+model TokenBlacklist {
+  id Int @default(autoincrement()) @id
+  token String
+  expiry_date DateTime
+
+  @@map("tokens_blacklist")
+}

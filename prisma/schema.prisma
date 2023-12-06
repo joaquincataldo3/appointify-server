@@ -32,8 +32,12 @@ model User {
   user_role_id Int 
 
   professionalAppointments Appointment[] @relation("ProfessionalAppointment")
+
   clientAppointments Appointment[] @relation("ClientAppointment") 
+
   tokens TokenBlacklist[] @relation("UserToken")
+
+  workDays ProfessionalWorkDay[] @relation("ProfessionalWorkDay")
 
   // tablename
   @@map("users")
@@ -90,4 +94,27 @@ model TokenBlacklist {
   user_id Int
 
   @@map("tokens_blacklist")
+}
+
+model ProfessionalWorkDay {
+
+  id Int @default(autoincrement()) @id
+
+  professional User @relation("ProfessionalWorkDay", fields: [professional_id], references: [id])
+  professional_id Int
+
+  weekDay WeekDay @relation("WeekDayProfessional", fields: [week_day_id], references: [id])
+  week_day_id Int
+
+  @@map("professional_work_days")
+}
+
+model WeekDay {
+  id Int @default(autoincrement()) @id
+  day_name String
+
+  professionalWorkDay ProfessionalWorkDay[] @relation("WeekDayProfessional")
+
+
+  @@map("week_days")
 }

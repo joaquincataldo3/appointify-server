@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, ExecutionContext, Post, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../service/auth.service';
 import { LogoutDto, SignUpDto, UserSignInDto } from '../dto/dto';
@@ -19,8 +19,8 @@ export class AuthController {
     }
 
     @Post('logout')
-    async logout (@Body() logoutDto: LogoutDto, @Res({passthrough: true}) res: Response) {
-        return await this.authService.logout(logoutDto, res)
+    async logout (@Body() logoutDto: LogoutDto, @Res({passthrough: true}) res: Response, context: ExecutionContext) {
+        return await this.authService.logout(logoutDto, res, context)
     }
 
     @Post('sign-up')

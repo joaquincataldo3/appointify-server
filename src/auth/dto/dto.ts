@@ -57,5 +57,4 @@ export class SignUpDto {
     @IsNumber()
     user_role_id: Roles
 
-
 }

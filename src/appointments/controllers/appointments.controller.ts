@@ -1,5 +1,7 @@
-import { Controller } from '@nestjs/common';
+import { Body, Controller } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CreateAppointmentDto } from '../dto/dto';
+import { AppointmentsService } from '../services/appointments.service';
 
 @Controller('appointments')
 
@@ -7,6 +9,10 @@ import { ApiTags } from '@nestjs/swagger';
 
 export class AppointmentsController {
 
-    
+    constructor (private appointmentsService: AppointmentsService) {}
+
+    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto) {
+        return await this.appointmentsService.createAppointment(createAppointmentDto);
+    }
 
 }

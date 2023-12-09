@@ -11,14 +11,14 @@ export class UsersService {
         return "All users !"
     }
 
-    async getUserById(userId: number): Promise<User | boolean>{
+    async getUserById(userId: number): Promise<User | null>{
         const userExists = await this.databaseService.user.findUnique({
             where: {
                 id: userId
             }
         })
         if (!userExists) {
-            return false;
+            return null;
         }
         return userExists;
     }

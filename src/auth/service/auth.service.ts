@@ -1,13 +1,13 @@
 import { ConflictException, ExecutionContext, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { LogoutDto, SignUpDto, UserSignInDto } from '../dto/dto';
-import { UsersService } from 'src/users/services/users.service';
 import { compare, hash } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { SignTokenInterface, UserSignInReturn } from '../interfaces/interfaces';
 import { Response, Request } from 'express';
-import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 import { User } from '@prisma/client';
+import { UsersService } from 'src/users/services/users.service';
+import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 import { DatabaseService } from 'src/database/services/database.service';
 
 @Injectable()

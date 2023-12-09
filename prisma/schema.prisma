@@ -16,7 +16,7 @@ model User_Role {
   role_name String
 
   // relations
-  users User[]
+  users User[] @relation("UserRole")
 }
 
 model User {
@@ -28,7 +28,7 @@ model User {
   password String
 
   // relations
-  user_role User_Role @relation(fields: [user_role_id], references: [id])
+  user_role User_Role @relation("UserRole", fields: [user_role_id], references: [id])
   user_role_id Int 
 
   professionalAppointments Appointment[] @relation("ProfessionalAppointment")
@@ -37,18 +37,23 @@ model User {
 
   tokens TokenBlacklist[] @relation("UserToken")
 
-  workDays ProfessionalWorkDay[] @relation("ProfessionalWorkDay")
+  schedule ProfessionalSchedule[] @relation("ProfessionalSchedule")
+
+  hours ProfessionalHour[] @relation("ProfessionalHour")
 
   // tablename
   @@map("users")
 }
 
-model Hour {
+model ProfessionalHour {
   id Int @default(autoincrement()) @id
   hour_begin DateTime
   hour_end DateTime
-
+  
   // relations
+  professional User @relation("ProfessionalHour", fields: [professional_id], references: [id])
+  professional_id Int
+
   appointment Appointment[] @relation("Hour")
 
   // tablename
@@ -81,7 +86,7 @@ model Appointment {
   yearDay YearDay @relation("YearDay", fields: [year_day_id], references: [id])
   year_day_id Int
 
-  hour Hour @relation("Hour", fields: [hour_id], references: [id])
+  hour ProfessionalHour @relation("Hour", fields: [hour_id], references: [id])
   hour_id Int
 
 }
@@ -96,15 +101,20 @@ model TokenBlacklist {
   @@map("tokens_blacklist")
 }
 
-model ProfessionalWorkDay {
+model ProfessionalSchedule {
 
   id Int @default(autoincrement()) @id
+  start_time DateTime
+  end_time DateTime
+  break_time_start DateTime
+  break_time_stop DateTime
 
-  professional User @relation("ProfessionalWorkDay", fields: [professional_id], references: [id])
+
+  professional User @relation("ProfessionalSchedule", fields: [professional_id], references: [id])
   professional_id Int
 
-  weekDay WeekDay @relation("WeekDayProfessional", fields: [week_day_id], references: [id])
-  week_day_id Int
+  weekDay WeekDay @relation("WeekDayProfessional", fields: [day_of_the_week_id], references: [id])
+  day_of_the_week_id Int
 
   @@map("professional_work_days")
 }
@@ -113,7 +123,7 @@ model WeekDay {
   id Int @default(autoincrement()) @id
   day_name String
 
-  professionalWorkDay ProfessionalWorkDay[] @relation("WeekDayProfessional")
+  professionalSchedule ProfessionalSchedule[] @relation("WeekDayProfessional")
 
 
   @@map("week_days")

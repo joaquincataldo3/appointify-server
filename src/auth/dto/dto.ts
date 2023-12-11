@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
-type Roles = 1 | 2;
+
 
 export class UserSignInDto {
     @ApiProperty()
@@ -16,14 +16,6 @@ export class UserSignInDto {
 
 }
 
-export class LogoutDto {
-
-    @ApiProperty()
-    @IsNotEmpty()
-    @IsString()
-    token: string
-
-}
 
 export class SignUpDto {
 
@@ -55,6 +47,7 @@ export class SignUpDto {
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    user_role_id: Roles
+    user_role_id: number
+
 
 }

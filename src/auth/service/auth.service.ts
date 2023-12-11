@@ -1,14 +1,15 @@
-import { ConflictException, ExecutionContext, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import { LogoutDto, SignUpDto, UserSignInDto } from '../dto/dto';
+import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { SignUpDto, UserSignInDto } from '../dto/dto';
 import { compare, hash } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { SignTokenInterface, UserSignInReturn } from '../interfaces/interfaces';
+import { RequestUser, SignTokenInterface, UserSignInReturn } from '../interfaces/interfaces';
 import { Response, Request } from 'express';
 import { User } from '@prisma/client';
 import { UsersService } from 'src/users/services/users.service';
 import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 import { DatabaseService } from 'src/database/services/database.service';
+import { AuthGuard } from 'src/guards/auth.guard';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +19,11 @@ export class AuthService {
         private jwtService: JwtService,
         private configService: ConfigService,
         private tokenBlacklistService: TokensBlacklistService,
-        private databaseService: DatabaseService
+        private databaseService: DatabaseService,
     ) { }
 
     private cookieName = 'access_token';
+
 
     async signToken(signTokenObject: SignTokenInterface): Promise<string> {
 
@@ -39,10 +41,13 @@ export class AuthService {
 
     }
 
-
     async signUp(signUpDto: SignUpDto): Promise<User> {
 
         const { username, email, password } = signUpDto;
+        const {user_role_id, ...rest} = signUpDto;
+        const copySignUpWithoutRole = {
+            ...rest
+        }
         const userExists = await this.usersService.getUserByField(username);
         if (userExists.length > 0) {
             throw new ConflictException('The user already exists in the database')
@@ -55,7 +60,14 @@ export class AuthService {
             const hashedPassword = await hash(password, 10);
             signUpDto.password = hashedPassword;
             const userCreated = await this.databaseService.user.create({
-                data: signUpDto
+                data: {
+                    ...copySignUpWithoutRole,
+                    userRole: {
+                        connect: {
+                            id: user_role_id
+                        }
+                    }
+                }
             });
             return userCreated;
         } catch (error) {
@@ -102,12 +114,9 @@ export class AuthService {
 
     }
 
-    async logout(logoutDto: LogoutDto, res: Response, context: ExecutionContext): Promise<boolean> {
+    async logout(res: Response, user: RequestUser): Promise<string> {
         // we access to the request object
-        const request = context.switchToHttp().getRequest();
-        const user = request.user;
-        const { token } = logoutDto;
-        const { id } = user;
+        const { id, token } = user;
         const createTokenInBlacklist = {
             tokenToCreate: token,
             userId: id
@@ -115,7 +124,7 @@ export class AuthService {
         await this.tokenBlacklistService.deleteTokenAssociatedWithUser(id);
         await this.tokenBlacklistService.createToken(createTokenInBlacklist);
         res.clearCookie(this.cookieName);
-        return true;
+        return "You've been logged out";
     }
 
 }

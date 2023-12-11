@@ -33,6 +33,17 @@ export class ProfessionalScheduleBody {
     @IsNotEmpty()
     @IsDate()
     break_time_stop: Date
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    interval_time: number
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
+    appointment_duration: number
+
 }
 
 

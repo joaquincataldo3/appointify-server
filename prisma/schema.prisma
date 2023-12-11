@@ -28,7 +28,7 @@ model User {
   password String
 
   // relations
-  user_role User_Role @relation("UserRole", fields: [user_role_id], references: [id])
+  userRole User_Role @relation("UserRole", fields: [user_role_id], references: [id])
   user_role_id Int 
 
   professionalAppointments Appointment[] @relation("ProfessionalAppointment")
@@ -53,6 +53,10 @@ model ProfessionalHour {
   // relations
   professional User @relation("ProfessionalHour", fields: [professional_id], references: [id])
   professional_id Int
+
+  dayOfTheWeeek WeekDay @relation("HourDayOfTheWeek", fields: [day_of_the_week_id], references: [id])
+  day_of_the_week_id Int
+
 
   appointment Appointment[] @relation("Hour")
 
@@ -125,6 +129,7 @@ model WeekDay {
 
   professionalSchedule ProfessionalSchedule[] @relation("WeekDayProfessional")
 
+  professionalHour ProfessionalHour[] @relation("HourDayOfTheWeek")
 
   @@map("week_days")
 }

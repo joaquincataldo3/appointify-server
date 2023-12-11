@@ -1,8 +1,9 @@
+import { User } from "@prisma/client"
 
 export interface SignTokenInterface {
     id: number
     username: string
-    email: string
+    email: string,
 }
 
 export interface UserSignInReturn {
@@ -12,5 +13,14 @@ export interface UserSignInReturn {
     first_name: string
     last_name: string
     token: string
-    user_role_id: number
+    user_role_id: number | any
+}
+
+export interface RequestUser {
+    id: number,
+    email: string
+    username: string
+    token: string
+    exp: number
+    iat: number
 }

@@ -6,7 +6,7 @@ import { AuthGuard } from '../guard/auth.guard';
 import { Response } from 'express';
 import { GetUserDecorator } from '../decorators/getUser.decorator';
 import { User } from '@prisma/client';
-import { RequestUser } from '../interfaces/interfaces';
+import { RequestUser, UserSignInReturn } from '../interfaces/interfaces';
 
 
 // swagger tag
@@ -25,13 +25,13 @@ export class AuthController {
     }
 
     @Post('sign-in')
-    async signIn (@Body() signInDto: UserSignInDto, @Res({passthrough: true}) res: Response) {
+    async signIn (@Body() signInDto: UserSignInDto, @Res({passthrough: true}) res: Response): Promise<UserSignInReturn> {
         return await this.authService.signIn(signInDto, res)
     }
 
 
     @Post('sign-up')
-    async signUp (@Body() signUpDto: SignUpDto) {
+    async signUp (@Body() signUpDto: SignUpDto): Promise<string> {
         return await this.authService.signUp(signUpDto);
         
     }

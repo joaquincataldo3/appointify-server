@@ -39,31 +39,31 @@ model User {
 
   schedule ProfessionalSchedule[] @relation("ProfessionalSchedule")
 
-  hours ProfessionalHour[] @relation("ProfessionalHour")
+  // hours ProfessionalHour[] @relation("ProfessionalHour")
 
   // tablename
   @@map("users")
 }
 
-model ProfessionalHour {
-  id Int @default(autoincrement()) @id
-  hour_begin DateTime
-  hour_end DateTime
+//model ProfessionalHour {
+  //id Int @default(autoincrement()) @id
+  //hour_begin DateTime
+  //hour_end DateTime
   
   // relations
-  professional User @relation("ProfessionalHour", fields: [professional_id], references: [id])
-  professional_id Int
+  //professional User @relation("ProfessionalHour", fields: [professional_id], references: [id])
+  //professional_id Int
 
-  dayOfTheWeeek WeekDay @relation("HourDayOfTheWeek", fields: [day_of_the_week_id], references: [id])
-  day_of_the_week_id Int
+  //dayOfTheWeeek WeekDay @relation("HourDayOfTheWeek", fields: [day_of_the_week_id], references: [id])
+  //day_of_the_week_id Int
 
 
-  appointment Appointment[] @relation("Hour")
+  //appointment Appointment[] @relation("Hour")
 
   // tablename
-  @@map("hours")  
+  //@@map("hours")  
 
-}
+//}
 
 model YearDay {
   id Int @default(autoincrement()) @id
@@ -79,6 +79,8 @@ model YearDay {
 
 model Appointment {
   id Int @default(autoincrement()) @id
+  appt_hour_start DateTime
+  appt_hour_end DateTime
   
   // relations
   client User @relation("ProfessionalAppointment" ,fields: [client_id], references: [id])
@@ -90,8 +92,8 @@ model Appointment {
   yearDay YearDay @relation("YearDay", fields: [year_day_id], references: [id])
   year_day_id Int
 
-  hour ProfessionalHour @relation("Hour", fields: [hour_id], references: [id])
-  hour_id Int
+  //hour ProfessionalHour @relation("Hour", fields: [hour_id], references: [id])
+  //hour_id Int
 
 }
 
@@ -112,6 +114,8 @@ model ProfessionalSchedule {
   end_time DateTime
   break_time_start DateTime
   break_time_stop DateTime
+  appt_interval Int
+  appt_duration Int
 
 
   professional User @relation("ProfessionalSchedule", fields: [professional_id], references: [id])
@@ -129,7 +133,7 @@ model WeekDay {
 
   professionalSchedule ProfessionalSchedule[] @relation("WeekDayProfessional")
 
-  professionalHour ProfessionalHour[] @relation("HourDayOfTheWeek")
+  //professionalHour ProfessionalHour[] @relation("HourDayOfTheWeek")
 
   @@map("week_days")
 }

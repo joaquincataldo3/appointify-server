@@ -41,7 +41,7 @@ export class AuthService {
 
     }
 
-    async signUp(signUpDto: SignUpDto): Promise<User> {
+    async signUp(signUpDto: SignUpDto): Promise<string> {
 
         const { username, email, password } = signUpDto;
         const {user_role_id, ...rest} = signUpDto;
@@ -59,7 +59,7 @@ export class AuthService {
         try {
             const hashedPassword = await hash(password, 10);
             signUpDto.password = hashedPassword;
-            const userCreated = await this.databaseService.user.create({
+            await this.databaseService.user.create({
                 data: {
                     ...copySignUpWithoutRole,
                     userRole: {
@@ -69,7 +69,7 @@ export class AuthService {
                     }
                 }
             });
-            return userCreated;
+            return "User successfully created";
         } catch (error) {
             console.log(error);
             throw new InternalServerErrorException(`Error in signUp: ${error}`)

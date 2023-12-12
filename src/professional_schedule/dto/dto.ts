@@ -37,12 +37,13 @@ export class ProfessionalScheduleBody {
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    interval_time: number
+    appt_interval: number
+
 
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    appointment_duration: number
+    appt_duration: number
 
 }
 

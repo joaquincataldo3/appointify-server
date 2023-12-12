@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/services/database.service';
 import { CreateProfessionalHours } from '../dto/dto';
-import { ProfessionalHour } from '@prisma/client';
+// import { ProfessionalHour } from '@prisma/client';
 
 @Injectable()
 export class ProfessionalHoursService {

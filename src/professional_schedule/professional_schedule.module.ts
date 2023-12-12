@@ -6,6 +6,7 @@ import { UsersModule } from 'src/users/users.module';
 @Module({
   controllers: [ProfessionalScheduleController],
   providers: [ProfessionalScheduleService],
-  imports: [UsersModule]
+  imports: [UsersModule],
+  exports: [ProfessionalScheduleService]
 })
 export class ProfessionalScheduleModule {}

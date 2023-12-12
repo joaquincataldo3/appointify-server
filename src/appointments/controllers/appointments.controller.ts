@@ -1,7 +1,8 @@
 import { Body, Controller } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateAppointmentDto } from '../dto/dto';
+import { CreateAppointmentDto, GetAvailableApptsDto } from '../dto/dto';
 import { AppointmentsService } from '../services/appointments.service';
+import { Appointment } from '@prisma/client';
 
 @Controller('appointments')
 
@@ -11,8 +12,12 @@ export class AppointmentsController {
 
     constructor (private appointmentsService: AppointmentsService) {}
 
-    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto) {
+    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
         return await this.appointmentsService.createAppointment(createAppointmentDto);
+    }
+
+    async getAvailableAppointments(@Body() getAvailableApptsDto: GetAvailableApptsDto) {
+        return await this.appointmentsService.getAvailableAppts(getAvailableApptsDto);
     }
 
 }

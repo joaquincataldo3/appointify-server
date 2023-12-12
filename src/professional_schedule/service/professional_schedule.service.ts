@@ -36,23 +36,21 @@ export class ProfessionalScheduleService {
         let schedulesCreated: Schedule[] | null = null;
         try {
             for (let i = 0; i < createScheduleBody.length; i++) {
-                const professionalId = createScheduleBody[i].professional_id;
-                const weekDayId = createScheduleBody[i].week_day_id;
-                const startTime= createScheduleBody[i].start_time;
-                const endTime = createScheduleBody[i].end_time;
-                const breakTimeStart = createScheduleBody[i].break_time_start;
-                const breakTimeStop = createScheduleBody[i].break_time_stop;
+                const {professional_id, week_day_id, 
+                    start_time, end_time, break_time_start, break_time_stop, 
+                    appt_duration, appt_interval} = createScheduleBody[i]
                 const work = await this.databaseService.professionalSchedule.create({
                     data: {
-                        professional: {connect: { id: professionalId } },
-                        weekDay: { connect: { id: weekDayId } },
-                        start_time: startTime,
-                        end_time: endTime,
-                        break_time_start: breakTimeStart,
-                        break_time_stop: breakTimeStop
+                        professional: {connect: { id: professional_id } },
+                        weekDay: { connect: { id: week_day_id } },
+                        start_time,
+                        end_time,
+                        break_time_start,
+                        break_time_stop,
+                        appt_duration,
+                        appt_interval
                     }
                 })
-
                 schedulesCreated.push(work);
             }
             return schedulesCreated;
@@ -60,12 +58,13 @@ export class ProfessionalScheduleService {
             console.log(error);
             // we do a rollback if an error ocurs
             for(let i = 0; i < schedulesCreated.length; i++) {
-                const ScheduleId = schedulesCreated[i].id;
-                await this.deleteSchedule(ScheduleId);
+                const {id} = schedulesCreated[i];
+                await this.deleteSchedule(id);
             }
             throw new InternalServerErrorException(`Error in createSchedule: ${error}`);
         }
     }
+
 
     async deleteSchedule (ScheduleId: number) {
         try {

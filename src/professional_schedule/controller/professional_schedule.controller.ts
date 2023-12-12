@@ -19,8 +19,8 @@ export class ProfessionalScheduleController {
     }
 
     @Post('/create') 
-    async createProfessionalWorkDay (@Body() createWorkDayBody: ProfessionalScheduleBody[]) {
-        return await this.createProfessionalWorkDay(createWorkDayBody);
+    async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleBody[]) {
+        return await this.createProfessionalWorkDay(createScheduleBody);
     }
 
 }

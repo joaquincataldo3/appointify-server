@@ -13,7 +13,7 @@ export interface UserSignInReturn {
     first_name: string
     last_name: string
     token: string
-    user_role_id: number | any
+    user_role_id: number 
 }
 
 export interface RequestUser {

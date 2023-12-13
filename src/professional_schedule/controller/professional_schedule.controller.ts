@@ -1,10 +1,16 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ProfessionalIdParam } from '../interfaces/interfaces';
 import { ProfessionalScheduleService } from '../service/professional_schedule.service';
 import { ProfessionalScheduleBody } from '../dto/dto';
+import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
+import { RoleAuthorizationGuard } from 'src/auth/guards/authorization/role.authorization.guard';
+import { Roles } from 'src/utils/decorators/roles/roles.decorator';
+import { Role } from 'src/utils/constants/roles/roles.constant';
 
-@Controller('professional-work-day')
+@UseGuards(AuthenticationGuard)
+
+@Controller('professional-schedule')
 
 @ApiTags('ProfessionalSchedule')
 
@@ -19,8 +25,10 @@ export class ProfessionalScheduleController {
     }
 
     @Post('/create') 
+    @UseGuards(RoleAuthorizationGuard)
+    @Roles(Role.Professional)
     async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleBody[]) {
-        return await this.createProfessionalWorkDay(createScheduleBody);
+        return await this.ProfessionalScheduleService.createSchedule(createScheduleBody);
     }
 
 }

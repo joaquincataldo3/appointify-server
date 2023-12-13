@@ -17,6 +17,8 @@ model User_Role {
 
   // relations
   users User[] @relation("UserRole")
+
+  @@map("user_roles")
 }
 
 model User {
@@ -94,6 +96,8 @@ model Appointment {
 
   //hour ProfessionalHour @relation("Hour", fields: [hour_id], references: [id])
   //hour_id Int
+
+   @@map("appointments")
 
 }
 

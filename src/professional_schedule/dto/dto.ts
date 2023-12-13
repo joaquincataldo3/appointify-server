@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger"
-import { IsDate, IsNotEmpty, IsNumber } from "class-validator"
+import { IsDate, IsNotEmpty, IsNumber, Min } from "class-validator"
 
 
 export class ProfessionalScheduleBody { 
@@ -43,6 +43,7 @@ export class ProfessionalScheduleBody {
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
+    @Min(5)
     appt_duration: number
 
 }

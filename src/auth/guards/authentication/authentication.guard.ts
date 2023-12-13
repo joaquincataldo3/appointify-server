@@ -10,7 +10,7 @@ import { Request } from 'express';
 import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class AuthenticationGuard implements CanActivate {
     constructor(
         private jwtService: JwtService,
         private configService: ConfigService,

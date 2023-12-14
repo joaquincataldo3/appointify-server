@@ -134,6 +134,7 @@ model ProfessionalSchedule {
 model WeekDay {
   id Int @default(autoincrement()) @id
   day_name String
+  day_number Int
 
   professionalSchedule ProfessionalSchedule[] @relation("WeekDayProfessional")
 

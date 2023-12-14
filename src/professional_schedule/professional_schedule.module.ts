@@ -4,12 +4,13 @@ import { ProfessionalScheduleService } from './service/professional_schedule.ser
 import { UsersModule } from 'src/users/users.module';
 import { TokensBlacklistModule } from 'src/tokens_blacklist/tokens_blacklist.module';
 import { JwtModule } from '@nestjs/jwt';
+import { YearDaysModule } from 'src/year_days/year_days.module';
 
 
 @Module({
   controllers: [ProfessionalScheduleController],
   providers: [ProfessionalScheduleService],
-  imports: [UsersModule, TokensBlacklistModule, JwtModule.register({})],
+  imports: [UsersModule, TokensBlacklistModule, YearDaysModule, JwtModule.register({})],
   exports: [ProfessionalScheduleService]
 })
 export class ProfessionalScheduleModule {}

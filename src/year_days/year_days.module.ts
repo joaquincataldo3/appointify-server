@@ -4,6 +4,7 @@ import { YearDaysController } from './controllers/year_days.controller';
 
 @Module({
   providers: [YearDaysService],
-  controllers: [YearDaysController]
+  controllers: [YearDaysController],
+  exports: [YearDaysService]
 })
 export class YearDaysModule {}

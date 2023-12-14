@@ -1,15 +1,23 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreateAppointmentDto, GetAvailableApptsDto } from '../dto/dto';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { CreateAppointmentDto } from '../dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
 import { Appointment } from '@prisma/client';
 import { ProfessionalScheduleService } from 'src/professional_schedule/service/professional_schedule.service';
 import { startOfDay, endOfDay, isWithinInterval, addMinutes } from 'date-fns';
 import { AvailableAppointmentsInterface, WorkingHoursInterface } from 'src/professional_schedule/interfaces/interfaces';
+import { YearDaysService } from 'src/year_days/services/year_days.service';
+import { UsersService } from 'src/users/services/users.service';
+
 
 @Injectable()
 export class AppointmentsService {
 
-    constructor(private databaseService: DatabaseService, private professionalScheduleService: ProfessionalScheduleService) { }
+    constructor(
+        private databaseService: DatabaseService, 
+        private professionalScheduleService: ProfessionalScheduleService,
+        private yearDaysService: YearDaysService,
+        private usersService: UsersService
+        ) { }
 
     async createAppointment(createAppointment: CreateAppointmentDto): Promise<Appointment> {
         try {
@@ -63,23 +71,47 @@ export class AppointmentsService {
     }
 
 
-    // TODO HANDLE TRYCATCH EXCEPTIONS
-    async getAvailableAppts(getAvailableAppts: GetAvailableApptsDto) {
-        const { professional_id, year_day_id } = getAvailableAppts;
+    
+    async getAvailableAppts(yearDayId: number, professionalId: number): Promise<AvailableAppointmentsInterface[]> {
 
-        const takenAppts = await this.databaseService.appointment.findMany({
-            where: {
-                professional_id,
-                year_day_id
+        try {
+
+            // TODO - COMPARAR DIA DEL AÑO CON EL DIA DE LA SEMANA Y VER SI ESO COINCIDE CON EL HORARIO Y DIA DEL PROFESIONAL
+
+            const professionalExists = await this.usersService.getUserById(professionalId);
+
+            if (!professionalExists) {
+                throw new NotFoundException(`User does not exists with id: ${professionalId}`)
             }
-        })
 
-        const professionalSchedule = await this.professionalScheduleService.getProfessionalSchedule(professional_id);
+            const yearDayExists = await this.yearDaysService.getYearDay(yearDayId);
 
-        const availableAppointments: AvailableAppointmentsInterface[] = [];
+             if (!yearDayExists) {
+                throw new NotFoundException(`User does not exists with id: ${yearDayId}`)
+            }
 
-        for (let i = 0; i < professionalSchedule.length; i++) {
-            const { start_time, end_time, appt_interval, appt_duration, break_time_start, break_time_stop, professional_id } = professionalSchedule[i];
+            const yearDayDate = yearDayExists.day;
+
+            const dayOfTheWeek = new Date(yearDayDate).getDay();
+
+            const professionalSchedule = await this.professionalScheduleService.getProfessionalSchedule(professionalId, dayOfTheWeek);
+
+            if (!professionalSchedule) {
+                throw new NotFoundException(`Professional does not work with in the day with id: ${yearDayId}`)
+            }
+
+
+            const takenAppts = await this.databaseService.appointment.findMany({
+                where: {
+                    professional_id: professionalId,
+                    year_day_id: yearDayId
+                }
+            })
+
+           
+            const availableAppointments: AvailableAppointmentsInterface[] = [];
+
+            const { start_time, end_time, appt_interval, appt_duration, break_time_start, break_time_stop, professional_id, year_day_id} = professionalSchedule[0];
 
             const apptDuration = appt_duration; // Duración de la cita en minutos
             const intervalBetweenAppointments = appt_interval;
@@ -118,8 +150,16 @@ export class AppointmentsService {
                 currentTime = addMinutes(endTime, intervalBetweenAppointments);
             }
 
+
             return availableAppointments;
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error
+            }
+
+            throw new InternalServerErrorException(`Error in getAvailableAppts: ${error}`)
         }
+
 
     }
 

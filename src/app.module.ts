@@ -9,10 +9,11 @@ import { TokensBlacklistModule } from './tokens_blacklist/tokens_blacklist.modul
 import { ConfigModule } from '@nestjs/config';
 import { ProfessionalScheduleModule } from './professional_schedule/professional_schedule.module';
 import { ProfessionalHoursModule } from './hours/professional_hours.module';
+import { DayOfTheWeekModule } from './day_of_the_week/day_of_the_week.module';
 
 
 @Module({
-  imports: [ProfessionalHoursModule, UserRolesModule, UsersModule, YearDaysModule, AppointmentsModule, DatabaseModule, AuthModule, TokensBlacklistModule, ProfessionalScheduleModule, ConfigModule.forRoot({isGlobal: true}) ],
+  imports: [ProfessionalHoursModule, UserRolesModule, UsersModule, YearDaysModule, AppointmentsModule, DatabaseModule, AuthModule, TokensBlacklistModule, ProfessionalScheduleModule, ConfigModule.forRoot({isGlobal: true}), DayOfTheWeekModule ],
   controllers: [],
   providers: [],
 })

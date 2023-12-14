@@ -34,15 +34,3 @@ export class CreateAppointmentDto {
 
 }
 
-export class GetAvailableApptsDto {
-    @ApiProperty()
-    @IsNotEmpty()
-    @IsNumber()
-    professional_id: number
-
-    @ApiProperty()
-    @IsNotEmpty()
-    @IsNumber()
-    year_day_id: number
-
-}

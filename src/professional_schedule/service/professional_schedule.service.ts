@@ -10,31 +10,59 @@ export class ProfessionalScheduleService {
 
     constructor(
         private databaseService: DatabaseService,
-        private usersService: UsersService
+        private usersService: UsersService,
     ) { }
 
+    private schedulesCreated: Schedule[] = [];
 
-    async getProfessionalSchedule(professionalId: number): Promise<ProfessionalSchedule[]> {
+    async getProfessionalSchedule(professionalId: number, weekDayId?: number): Promise<ProfessionalSchedule[] | boolean> {
         try {
-            const professionalExists = await this.usersService.getUserById(professionalId);
-            if (!professionalExists) {
-                throw new NotFoundException(`User does not exists with id: ${professionalId}`)
+            
+
+            let professionalSchedule: ProfessionalSchedule[];
+            // podemos filtrar por día, si no devuelve el schedule entero
+
+            if (weekDayId) {
+                professionalSchedule = await this.databaseService.professionalSchedule.findMany({
+                    where: {
+                        professional_id: professionalId,
+                        day_of_the_week_id: weekDayId
+                    },
+                    include: {
+                        weekDay: true
+                    }
+                })
+            } else {
+                professionalSchedule = await this.databaseService.professionalSchedule.findMany({
+                    where: {
+                        professional_id: professionalId
+                    },
+                    include: {
+                        weekDay: true
+                    }
+                })
             }
-            const professionalSchedules = await this.databaseService.professionalSchedule.findMany({
-                where: {
-                    professional_id: professionalId
-                }
-            })
-            return professionalSchedules;
+
+            if (professionalSchedule.length === 0) {
+                return false
+            }
+
+            return professionalSchedule;
         } catch (error) {
             console.log(error);
+
+            if(error instanceof NotFoundException) {
+                throw error;
+            }
+
             throw new InternalServerErrorException(`Error in getProfessionalSchedule: ${error}`);
         }
 
     }
 
     async createSchedule(createScheduleBody: ProfessionalScheduleBody[]) {
-        let schedulesCreated: Schedule[] | null = null;
+        
+        console.log('createSchedule', createScheduleBody);
         try {
             for (let i = 0; i < createScheduleBody.length; i++) {
                 const { professional_id, week_day_id, ...rest } = createScheduleBody[i];
@@ -52,14 +80,14 @@ export class ProfessionalScheduleService {
                         ...rest
                     }
                 })
-                schedulesCreated.push(work);
+                this.schedulesCreated.push(work);
             }
-            return schedulesCreated;
+            return this.schedulesCreated;
         } catch (error) {
             console.log(error);
             // we do a rollback if an error ocurs
-            for (let i = 0; i < schedulesCreated.length; i++) {
-                const { id } = schedulesCreated[i];
+            for (let i = 0; i < this.schedulesCreated.length; i++) {
+                const { id } = this.schedulesCreated[i];
                 await this.deleteSchedule(id);
             }
 

@@ -12,11 +12,13 @@ export class UsersService {
     }
 
     async getUserById(userId: number): Promise<User | null>{
+        console.log(userId)
         const userExists = await this.databaseService.user.findUnique({
             where: {
                 id: userId
             }
         })
+        console.log(userExists);
         if (!userExists) {
             return null;
         }
@@ -32,6 +34,7 @@ export class UsersService {
                 ] 
             }
         })
+       
         if (!userExists) {
             return [];
         }

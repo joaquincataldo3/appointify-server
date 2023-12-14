@@ -28,6 +28,7 @@ export class ProfessionalScheduleController {
     @UseGuards(RoleAuthorizationGuard)
     @Roles(Role.Professional)
     async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleBody[]) {
+        console.log('controller', createScheduleBody);
         return await this.ProfessionalScheduleService.createSchedule(createScheduleBody);
     }
 

@@ -45,7 +45,6 @@ export class AuthService {
         const { user_role_id, ...rest } = signUpDto;
         const usernameWithNoCapitalLetters = rest.username.toLowerCase();
         const emailWithNoCapitalLetters = rest.email.toLowerCase();
-        console.log(emailWithNoCapitalLetters)
         const userExists = await this.usersService.getUserByField(usernameWithNoCapitalLetters);
         if (userExists.length > 0) {
             throw new ConflictException('The user already exists in the database')
@@ -56,7 +55,7 @@ export class AuthService {
         }
         try {
             const hashedPassword = await hash(rest.password, 10);
-            signUpDto.password = hashedPassword;
+            rest.password = hashedPassword;
             await this.databaseService.user.create({
                 data: {
                     ...rest,
@@ -98,7 +97,8 @@ export class AuthService {
             const signTokenObject: SignTokenInterface = {
                 email,
                 username,
-                id
+                id,
+                user_role_id
             }
             const token = await this.signToken(signTokenObject);
             res.cookie(this.cookieName, { ...signTokenObject, token }, { maxAge: 3600000 });

@@ -62,7 +62,6 @@ export class ProfessionalScheduleService {
 
     async createSchedule(createScheduleBody: ProfessionalScheduleBody[]) {
         
-        console.log('createSchedule', createScheduleBody);
         try {
             for (let i = 0; i < createScheduleBody.length; i++) {
                 const { professional_id, week_day_id, ...rest } = createScheduleBody[i];

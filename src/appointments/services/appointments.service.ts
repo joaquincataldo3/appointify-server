@@ -3,21 +3,22 @@ import { CreateAppointmentDto } from '../dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
 import { Appointment } from '@prisma/client';
 import { ProfessionalScheduleService } from 'src/professional_schedule/service/professional_schedule.service';
-import { startOfDay, endOfDay, isWithinInterval, addMinutes } from 'date-fns';
+import { addMinutes, set, getHours, getMinutes} from 'date-fns';
 import { AvailableAppointmentsInterface, WorkingHoursInterface } from 'src/professional_schedule/interfaces/interfaces';
 import { YearDaysService } from 'src/year_days/services/year_days.service';
 import { UsersService } from 'src/users/services/users.service';
+import { SetHoursAndMinutes } from '../interfaces/interfaces';
 
 
 @Injectable()
 export class AppointmentsService {
 
     constructor(
-        private databaseService: DatabaseService, 
+        private databaseService: DatabaseService,
         private professionalScheduleService: ProfessionalScheduleService,
         private yearDaysService: YearDaysService,
         private usersService: UsersService
-        ) { }
+    ) { }
 
     async createAppointment(createAppointment: CreateAppointmentDto): Promise<Appointment> {
         try {
@@ -45,39 +46,60 @@ export class AppointmentsService {
     }
 
 
+    isTimeWithinWorkingHours(timeToCheck: Date, workingHoursObj: WorkingHoursInterface): boolean {
+        const { start, end } = workingHoursObj
+        const time = timeToCheck.getHours() * 60 + timeToCheck.getMinutes();
+        const startTime = start.getHours() * 60 + end.getMinutes();
+        const endTime = end.getHours() * 60 + end.getMinutes();
 
-    isTimeOccupied(start: Date, end: Date, takenAppointments: Appointment[], lunchStart: Date | null, lunchEnd: Date | null) {
-        return takenAppointments.some((appointment) => {
-            // convertimos los dos a un objeto date para operar
-            const apptStart = new Date(appointment.appt_hour_start);
-            const apptEnd = new Date(appointment.appt_hour_end);
-
-            // verificamos si hay una superposición de horarios
-            const workingHoursObj: WorkingHoursInterface = {
-                start: apptStart,
-                end: apptEnd
-            }
-            const isOverlap = isWithinInterval(start, workingHoursObj) ||
-                isWithinInterval(end, workingHoursObj);
-
-            // verificamos si la cita está dentro del horario de almuerzo+
-            const isDuringLunch = lunchStart !== null && lunchEnd !== null &&
-                isWithinInterval(start, { start: lunchStart, end: lunchEnd }) &&
-                isWithinInterval(end, { start: lunchStart, end: lunchEnd });
-
-            // Devolver true si hay superposición o está durante el almuerzo
-            return isOverlap || isDuringLunch;
-        });
+        return time >= startTime && time <= endTime;
     }
 
 
-    
+    isTimeOccupied(start: Date, end: Date, takenAppointments: Appointment[], lunchStart: Date | null, lunchEnd: Date | null): boolean {
+
+        let isDuringLunch: boolean;
+
+        if (lunchStart === null && lunchEnd === null) {
+            isDuringLunch = false;
+        } else {
+            isDuringLunch =
+                this.isTimeWithinWorkingHours(start, { start: lunchStart, end: lunchEnd })
+                &&
+                this.isTimeWithinWorkingHours(end, { start: lunchStart, end: lunchEnd });
+        }
+
+
+        // Si no hay citas, entonces no está ocupado
+        if (takenAppointments.length === 0) {
+            return isDuringLunch;
+        }
+
+        // Verificar superposición con citas existentes
+        const isOverlap = takenAppointments.some((appointment) => {
+            const apptStart = new Date(appointment.appt_hour_start);
+            const apptEnd = new Date(appointment.appt_hour_end);
+            const workingHoursObj: WorkingHoursInterface = {
+                start: apptStart,
+                end: apptEnd
+            };
+
+            const isOverlap = this.isTimeWithinWorkingHours(start, workingHoursObj) ||
+                this.isTimeWithinWorkingHours(end, workingHoursObj);
+
+            return isOverlap;
+        });
+
+        return isDuringLunch || isOverlap;
+    }
+
+
+
     async getAvailableAppts(yearDayId: number, professionalId: number): Promise<AvailableAppointmentsInterface[]> {
 
         try {
 
-            // TODO - COMPARAR DIA DEL AÑO CON EL DIA DE LA SEMANA Y VER SI ESO COINCIDE CON EL HORARIO Y DIA DEL PROFESIONAL
-
+            // TODO - CHECK IF EVERYTHING WORKS WITH LUNCH HOURS
             const professionalExists = await this.usersService.getUserById(professionalId);
 
             if (!professionalExists) {
@@ -86,7 +108,7 @@ export class AppointmentsService {
 
             const yearDayExists = await this.yearDaysService.getYearDay(yearDayId);
 
-             if (!yearDayExists) {
+            if (!yearDayExists) {
                 throw new NotFoundException(`User does not exists with id: ${yearDayId}`)
             }
 
@@ -100,7 +122,6 @@ export class AppointmentsService {
                 throw new NotFoundException(`Professional does not work with in the day with id: ${yearDayId}`)
             }
 
-
             const takenAppts = await this.databaseService.appointment.findMany({
                 where: {
                     professional_id: professionalId,
@@ -108,17 +129,28 @@ export class AppointmentsService {
                 }
             })
 
-           
             const availableAppointments: AvailableAppointmentsInterface[] = [];
 
-            const { start_time, end_time, appt_interval, appt_duration, break_time_start, break_time_stop, professional_id, year_day_id} = professionalSchedule[0];
+            const { start_time, end_time, appt_interval, appt_duration, break_time_start, break_time_stop, professional_id, day_of_the_week_id } = professionalSchedule[0];
+           
 
             const apptDuration = appt_duration; // Duración de la cita en minutos
             const intervalBetweenAppointments = appt_interval;
 
-            // instanciamos las fechas para poder iterar y hacer el while frente a dayend
-            const dayStart = startOfDay(new Date());
-            const dayEnd = endOfDay(new Date());
+            // set de date-fns toma dos parametros
+            // el día de la fecha original
+            // y un objeto que especifica qué campos se deben establecer
+            const setStartDayHoursAndMinutes: SetHoursAndMinutes = {
+                hours: start_time.getHours(),
+                minutes: start_time.getMinutes()
+            }
+
+            const setEndDayHoursAndMinutes: SetHoursAndMinutes = {
+                hours: end_time.getHours(),
+                minutes: end_time.getMinutes()
+            } 
+            const dayStart = set(yearDayDate, setStartDayHoursAndMinutes);
+            const dayEnd = set(yearDayDate, setEndDayHoursAndMinutes);
             let currentTime = new Date(dayStart);
 
             while (currentTime < dayEnd) {
@@ -131,10 +163,13 @@ export class AppointmentsService {
                     start: start_time,
                     end: end_time
                 }
-                const isBetweenWorkingHours = isWithinInterval(currentTime, workingHoursObj);
+
+
+                const isBetweenWorkingHours = this.isTimeWithinWorkingHours(currentTime, workingHoursObj);
 
                 // nos aseguramos de que no haya superposición de citas en horarios o que no esté en almuerzo
                 const isTimeOccupied = this.isTimeOccupied(currentTime, endTime, takenAppts, break_time_start, break_time_stop)
+
 
                 // en el caso de que de true la primera y false la segunda, pusheamos
                 if (isBetweenWorkingHours && !isTimeOccupied) {

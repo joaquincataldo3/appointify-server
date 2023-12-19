@@ -1,7 +1,7 @@
 import { Body, ConflictException, Controller, Get, HttpCode, InternalServerErrorException, NotFoundException, Post, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../service/auth.service';
-import { SignUpDto, UserSignInDto } from '../dto/dto';
+import { CreateUserDto, UserSignInDto } from '../dto/dto';
 import { AuthenticationGuard } from '../guards/authentication/authentication.guard';
 import { Response } from 'express';
 import { GetUserDecorator } from '../../utils/decorators/user/getUser.decorator';
@@ -53,7 +53,7 @@ export class AuthController {
 
     @Post('sign-up')
     @HttpCode(201)
-    async signUp (@Body() signUpDto: SignUpDto): Promise<RequestSuccessNoEntity> {
+    async signUp (@Body() signUpDto: CreateUserDto): Promise<RequestSuccessNoEntity> {
         try {
             return await this.authService.signUp(signUpDto);
         } catch (error) {

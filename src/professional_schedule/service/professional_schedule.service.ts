@@ -1,11 +1,11 @@
-import { HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ProfessionalSchedule } from '@prisma/client';
 import { DatabaseService } from 'src/database/services/database.service';
 import { UsersService } from 'src/users/services/users.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
 import { Schedule } from '../interfaces/interfaces';
-import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
+import { BatchPayload, RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 
 @Injectable()
 export class ProfessionalScheduleService {
@@ -129,7 +129,7 @@ export class ProfessionalScheduleService {
                     })
                     
                     this.schedulesCreated.schedule.push(work);
-                    console.log(this.schedulesCreated)
+                    
                 }
             
             return this.schedulesCreated;
@@ -142,8 +142,22 @@ export class ProfessionalScheduleService {
         }
     }
 
-    async updateSchedule(createScheduleBody: ProfessionalScheduleInBody){
-
+    async updateSchedule(professionalId: number, updateScheduleBody: ProfessionalScheduleInBody): Promise<BatchPayload> {
+        try {
+            const affectedRows = await this.databaseService.professionalSchedule.updateMany({
+                where: {
+                    professional_id: professionalId
+                },
+                data: updateScheduleBody
+            })
+            if(affectedRows.count === 0) {
+                throw new NotFoundException('Schedule not found')
+            }
+            return affectedRows;
+        } catch (error) {
+            throw error;
+        }
+       
     }
 
     async deleteSchedule(ScheduleId: number): Promise<RequestSuccessNoEntity> {

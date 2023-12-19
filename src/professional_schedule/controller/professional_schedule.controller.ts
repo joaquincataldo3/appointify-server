@@ -6,6 +6,9 @@ import { AuthenticationGuard } from 'src/auth/guards/authentication/authenticati
 import { professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
 import { IsSameProfessionalGuard } from 'src/auth/guards/authorization/isSameProfessional.guard';
+import { Schedule } from '../interfaces/interfaces';
+import { ProfessionalSchedule } from '@prisma/client';
+import { BatchPayload } from 'src/utils/global-interfaces/global.interfaces';
 
 @UseGuards(AuthenticationGuard)
 
@@ -38,17 +41,20 @@ export class ProfessionalScheduleController {
         }
     }
 
-    @Put(`update/${scheduleIdParam}`)
+    @Put(`update/:${professionalIdParam}`)
     @UseGuards(IsSameProfessionalGuard)
-    async updateSchedule(){
+    async updateSchedule(@Param(professionalIdParam, ParseIntPipe) professionalId: number, newSchedule: ProfessionalScheduleInBody): Promise<BatchPayload>{
         try {
-            
+            return await this.ProfessionalScheduleService.updateSchedule(professionalId, newSchedule);
         } catch (error) {
-            
+            if(error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new InternalServerErrorException(serverErrorReturn); 
         }
     }
 
-    @Delete(`delete/:${scheduleIdParam}`)
+    @Delete(`delete/:${professionalIdParam}/:${scheduleIdParam}`)
     @UseGuards(IsSameProfessionalGuard)
     async deleteProfessionalSchedule(@Param(scheduleIdParam, ParseIntPipe) scheduleId: number) {
         try {

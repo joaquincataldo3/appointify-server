@@ -17,7 +17,7 @@ export class UserSignInDto {
 }
 
 
-export class SignUpDto {
+export class CreateUserDto {
 
     @ApiProperty()
     @IsNotEmpty()

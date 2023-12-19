@@ -1,11 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ProfessionalScheduleService } from '../service/professional_schedule.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
 import { professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
-import { IsSameProfessionalInterceptor } from 'src/auth/interceptors/isSameProfessional.interceptor';
+import { IsSameProfessionalGuard } from 'src/auth/guards/authorization/isSameProfessional.guard';
 
 @UseGuards(AuthenticationGuard)
 
@@ -22,8 +22,8 @@ export class ProfessionalScheduleController {
         return await this.ProfessionalScheduleService.getProfessionalSchedule(professionalId);
     }
 
-    @Post('/create') 
-    @UseInterceptors(IsSameProfessionalInterceptor)
+    @Post('create') 
+    @UseGuards(IsSameProfessionalGuard)
     @HttpCode(201)
     async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleInBody) {
         try {
@@ -38,8 +38,18 @@ export class ProfessionalScheduleController {
         }
     }
 
-    @Delete(`/delete/:${scheduleIdParam}`)
-    @UseInterceptors(IsSameProfessionalInterceptor)
+    @Put(`update/${scheduleIdParam}`)
+    @UseGuards(IsSameProfessionalGuard)
+    async updateSchedule(){
+        try {
+            
+        } catch (error) {
+            
+        }
+    }
+
+    @Delete(`delete/:${scheduleIdParam}`)
+    @UseGuards(IsSameProfessionalGuard)
     async deleteProfessionalSchedule(@Param(scheduleIdParam, ParseIntPipe) scheduleId: number) {
         try {
             return await this.ProfessionalScheduleService.deleteSchedule(scheduleId);

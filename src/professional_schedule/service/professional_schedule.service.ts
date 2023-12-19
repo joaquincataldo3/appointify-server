@@ -142,6 +142,10 @@ export class ProfessionalScheduleService {
         }
     }
 
+    async updateSchedule(createScheduleBody: ProfessionalScheduleInBody){
+
+    }
+
     async deleteSchedule(ScheduleId: number): Promise<RequestSuccessNoEntity> {
         try {
             const schedule = await this.databaseService.professionalSchedule.delete({

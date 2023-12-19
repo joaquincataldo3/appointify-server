@@ -52,8 +52,7 @@ export class TokensBlacklistService {
             });
             return token
         } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException('Internal error in createToken')
+            throw error;
         }
     }
 
@@ -79,10 +78,9 @@ export class TokensBlacklistService {
             })
             return countOfDeletedTokens;
         } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException('Error in delete token associated with user')   
+            throw error;
         }
-        
+    
     }
 
 }

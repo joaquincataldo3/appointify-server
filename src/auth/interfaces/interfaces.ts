@@ -1,4 +1,4 @@
-import { User } from "@prisma/client"
+import { Appointment, User } from "@prisma/client"
 
 export interface SignTokenInterface {
     id: number
@@ -24,4 +24,23 @@ export interface RequestUser {
     token: string
     exp: number
     iat: number
+}
+
+export interface AvailableAppointmentsInterface {
+    appt_start_time: Date
+    appt_end_time: Date
+    professional_id: number
+}
+
+export interface AppointmentValuesAndCondition {
+    start: Date,
+    end: Date
+}
+ 
+export interface CalculateTimeOccupied  {
+    currentTime: Date,
+    endDay: Date,
+    takenAppts: Appointment[],
+    lunchStart: Date | null
+    lunchEnd: Date | null
 }

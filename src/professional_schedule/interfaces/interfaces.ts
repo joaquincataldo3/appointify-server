@@ -1,14 +1,15 @@
-export interface ProfessionalIdParam {
-    professionalId: number
-}
-
-export interface AvailableAppointmentsInterface {
-    appt_start_time: Date
-    appt_end_time: Date
+export interface DaySchedule {
+    id: number
     professional_id: number
+    day_of_the_week_id: number
+    start_time: Date
+    end_time: Date
+    break_time_start: Date
+    break_time_stop: Date
 }
 
-export interface WorkingHoursInterface {
-    start: Date,
-    end: Date
+export interface Schedule {
+    professional_id: number
+    schedule: DaySchedule[]
 }
+

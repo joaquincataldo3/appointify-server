@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
 import { SignUpDto, UserSignInDto } from '../dto/dto';
 import { compare, hash } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -9,6 +9,7 @@ import { UsersService } from 'src/users/services/users.service';
 import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_blacklist.service';
 import { DatabaseService } from 'src/database/services/database.service';
 import { AuthenticationGuard } from '../guards/authentication/authentication.guard';
+import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 
 @Injectable()
 export class AuthService {
@@ -40,20 +41,20 @@ export class AuthService {
 
     }
 
-    async signUp(signUpDto: SignUpDto): Promise<string> {
-
-        const { user_role_id, ...rest } = signUpDto;
-        const usernameWithNoCapitalLetters = rest.username.toLowerCase();
-        const emailWithNoCapitalLetters = rest.email.toLowerCase();
-        const userExists = await this.usersService.getUserByField(usernameWithNoCapitalLetters);
-        if (userExists.length > 0) {
-            throw new ConflictException('The user already exists in the database')
-        }
-        const emailExists = await this.usersService.getUserByField(emailWithNoCapitalLetters);
-        if (emailExists.length > 0) {
-            throw new ConflictException('The email already exists in the database')
-        }
+    async signUp(signUpDto: SignUpDto): Promise<RequestSuccessNoEntity> {
         try {
+            const { user_role_id, ...rest } = signUpDto;
+            const usernameWithNoCapitalLetters = rest.username.toLowerCase();
+            const emailWithNoCapitalLetters = rest.email.toLowerCase();
+            const userExists = await this.usersService.getUserByField(usernameWithNoCapitalLetters);
+            if (userExists.length > 0) {
+                throw new ConflictException('The user already exists in the database')
+            }
+            const emailExists = await this.usersService.getUserByField(emailWithNoCapitalLetters);
+            if (emailExists.length > 0) {
+                throw new ConflictException('The email already exists in the database')
+            }
+
             const hashedPassword = await hash(rest.password, 10);
             rest.password = hashedPassword;
             await this.databaseService.user.create({
@@ -66,84 +67,58 @@ export class AuthService {
                     }
                 }
             });
-            return "User successfully created";
+            return { ok: true };
         } catch (error) {
-            console.log(error);
-
-            if(error instanceof ConflictException) {
-                throw error;
-            }
-
-            throw new InternalServerErrorException(`Error in signUp: ${error}`)
+            throw error;
         }
-
     }
 
     async signIn(signInDto: UserSignInDto, res: Response): Promise<UserSignInReturn> {
-
         const { email, password } = signInDto;
         const emailWithNoCapitalLetters = email.toLowerCase();
-        try {
-            const userEmailExists = await this.usersService.getUserByField(emailWithNoCapitalLetters);
-            if (userEmailExists.length === 0) {
-                throw new NotFoundException(`User not found by email with email: ${emailWithNoCapitalLetters}`);
-            }
-            const userFound = userEmailExists[0];
-            const passwordMatches = await compare(password, userFound.password);
-            if (!passwordMatches) {
-                throw new UnauthorizedException("Passwords don't match")
-            }
-            const { username, id, first_name, last_name, user_role_id } = userFound;
-            const signTokenObject: SignTokenInterface = {
-                email,
-                username,
-                id,
-                user_role_id
-            }
-            const token = await this.signToken(signTokenObject);
-            res.cookie(this.cookieName, { ...signTokenObject, token }, { maxAge: 3600000 });
-            const userSignInReturn: UserSignInReturn = {
-                email,
-                username,
-                id,
-                token,
-                user_role_id,
-                first_name,
-                last_name
-            }
-            return userSignInReturn
-        } catch (error) {
 
-            if (error instanceof NotFoundException) {
-                throw error;
-            } else if (error instanceof UnauthorizedException) {
-                throw error;
-            }
-
-            throw new InternalServerErrorException(`Error in signIn: ${error}`)
+        const userEmailExists = await this.usersService.getUserByField(emailWithNoCapitalLetters);
+        if (userEmailExists.length === 0) {
+            throw new NotFoundException('Invalid credentials');
         }
-
-
+        const userFound = userEmailExists[0];
+        const passwordMatches = await compare(password, userFound.password);
+        if (!passwordMatches) {
+            throw new UnauthorizedException('Invalid credentials')
+        }
+        const { username, id, first_name, last_name, user_role_id } = userFound;
+        const signTokenObject: SignTokenInterface = {
+            email,
+            username,
+            id,
+            user_role_id
+        }
+        const token = await this.signToken(signTokenObject);
+        res.cookie(this.cookieName, { ...signTokenObject, token }, { maxAge: 3600000 });
+        const userSignInReturn: UserSignInReturn = {
+            email,
+            username,
+            id,
+            token,
+            user_role_id,
+            first_name,
+            last_name
+        }
+        return userSignInReturn
     }
 
     @UseGuards(AuthenticationGuard)
-    async logout(res: Response, user: RequestUser): Promise<string> {
-        try {
-            // we access to the request object
-            const { id, token } = user;
-            const createTokenInBlacklist = {
-                tokenToCreate: token,
-                userId: id
-            }
-            await this.tokenBlacklistService.deleteTokenAssociatedWithUser(id);
-            await this.tokenBlacklistService.createToken(createTokenInBlacklist);
-            res.clearCookie(this.cookieName);
-            return "You've been logged out";
-        } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException(`Internal server error in logout: ${error}`);
+    async logout(res: Response, user: RequestUser): Promise<RequestSuccessNoEntity> {
+        // we access to the request object
+        const { id, token } = user;
+        const createTokenInBlacklist = {
+            tokenToCreate: token,
+            userId: id
         }
-
+        await this.tokenBlacklistService.deleteTokenAssociatedWithUser(id);
+        await this.tokenBlacklistService.createToken(createTokenInBlacklist);
+        res.clearCookie(this.cookieName);
+        return { ok: true };
     }
 
 }

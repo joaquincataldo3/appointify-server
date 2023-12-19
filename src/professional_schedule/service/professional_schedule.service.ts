@@ -1,9 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ProfessionalSchedule } from '@prisma/client';
 import { DatabaseService } from 'src/database/services/database.service';
 import { UsersService } from 'src/users/services/users.service';
-import { ProfessionalScheduleBody, Schedule } from '../dto/dto';
+import { ProfessionalScheduleInBody } from '../dto/dto';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
+import { Schedule } from '../interfaces/interfaces';
+import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 
 @Injectable()
 export class ProfessionalScheduleService {
@@ -13,12 +15,13 @@ export class ProfessionalScheduleService {
         private usersService: UsersService,
     ) { }
 
-    private schedulesCreated: Schedule[] = [];
+    private schedulesCreated: Schedule = {
+        professional_id: null,
+        schedule: []
+    };
 
     async getProfessionalSchedule(professionalId: number, weekDayId?: number): Promise<ProfessionalSchedule[] | boolean> {
         try {
-            
-
             let professionalSchedule: ProfessionalSchedule[];
             // podemos filtrar por día, si no devuelve el schedule entero
 
@@ -29,7 +32,15 @@ export class ProfessionalScheduleService {
                         day_of_the_week_id: weekDayId
                     },
                     include: {
-                        weekDay: true
+                        weekDay: true,
+                        professional: {
+                            select: {
+                                id: true,
+                                username: true,
+                                first_name: true,
+                                email: true
+                            }
+                        }
                     }
                 })
             } else {
@@ -38,20 +49,28 @@ export class ProfessionalScheduleService {
                         professional_id: professionalId
                     },
                     include: {
-                        weekDay: true
+                        weekDay: true,
+                        professional: {
+                            select: {
+                                id: true,
+                                username: true,
+                                first_name: true,
+                                email: true
+                            }
+                        }
                     }
                 })
             }
-
             if (professionalSchedule.length === 0) {
                 return false
             }
-
+            
+            
             return professionalSchedule;
         } catch (error) {
-            console.log(error);
+            
 
-            if(error instanceof NotFoundException) {
+            if (error instanceof NotFoundException) {
                 throw error;
             }
 
@@ -60,58 +79,82 @@ export class ProfessionalScheduleService {
 
     }
 
-    async createSchedule(createScheduleBody: ProfessionalScheduleBody[]) {
-        
+    async getScheduleByWeekDay(day_of_the_week_id: number) {
         try {
-            for (let i = 0; i < createScheduleBody.length; i++) {
-                const { professional_id, week_day_id, ...rest } = createScheduleBody[i];
-                if (rest.start_time >= rest.end_time || rest.break_time_start >= rest.break_time_stop) {
-                    throw new CustomValuesConflict('Time intervals no valid');
+            const scheduleOfTheDay = await this.databaseService.professionalSchedule.findFirst({
+                where: {
+                    day_of_the_week_id
+                },
+                include: {
+                    weekDay: true
                 }
-                const isIdCorrect = await this.usersService.getUserById(professional_id);
-                if (!isIdCorrect) {
-                    throw new NotFoundException(`Professional not found with id: ${professional_id}`);
-                }
-                const work = await this.databaseService.professionalSchedule.create({
-                    data: {
-                        professional: { connect: { id: professional_id } },
-                        weekDay: { connect: { id: week_day_id } },
-                        ...rest
+            });
+            return scheduleOfTheDay;
+        } catch (error) {
+            throw new InternalServerErrorException();
+        }
+       
+    }
+
+    async createSchedule(createScheduleBody: ProfessionalScheduleInBody): Promise<Schedule> {
+        try {
+                const { professional_id } = createScheduleBody;
+                this.schedulesCreated.professional_id = professional_id;
+                const schedule = createScheduleBody.schedule;
+                for (let i = 0; i < schedule.length; i++) {
+                    const { week_day_id, ...rest } = schedule[i];
+                    
+                    if (rest.start_time >= rest.end_time || rest.break_time_start >= rest.break_time_stop) {
+                        throw new CustomValuesConflict('Time intervals no valid');
                     }
-                })
-                this.schedulesCreated.push(work);
-            }
+                    const isIdCorrect = await this.usersService.getUserById(professional_id);
+                    
+                    if (!isIdCorrect) {
+                        throw new NotFoundException(`Professional not found with id: ${professional_id}`);
+                    }
+                    const isAlreadyAnScheduleForTheDay = await this.getScheduleByWeekDay(week_day_id);
+                    console.log(isAlreadyAnScheduleForTheDay);
+                    if(isAlreadyAnScheduleForTheDay) {
+                   
+                        const day = isAlreadyAnScheduleForTheDay.weekDay.day_name;
+                        throw new CustomValuesConflict(`There is already a schedule set up for the day ${day}`)
+                        
+                    }
+                    const work = await this.databaseService.professionalSchedule.create({
+                        data: {
+                            professional: { connect: { id: professional_id } },
+                            weekDay: { connect: { id: week_day_id } },
+                            ...rest
+                        }
+                    })
+                    
+                    this.schedulesCreated.schedule.push(work);
+                    console.log(this.schedulesCreated)
+                }
+            
             return this.schedulesCreated;
         } catch (error) {
-            console.log(error);
-            // we do a rollback if an error ocurs
-            for (let i = 0; i < this.schedulesCreated.length; i++) {
+            for (let i = 0; i < this.schedulesCreated.schedule.length; i++) {
                 const { id } = this.schedulesCreated[i];
                 await this.deleteSchedule(id);
             }
-
-            if (error instanceof NotFoundException) {
-                throw error; 
-            } else if (error instanceof CustomValuesConflict) {
-                throw error; 
-            }
-
-
-            throw new InternalServerErrorException(`Internal server error in createSchedule: ${error}`);
+            throw error;
         }
     }
 
-
-    async deleteSchedule(ScheduleId: number) {
+    async deleteSchedule(ScheduleId: number): Promise<RequestSuccessNoEntity> {
         try {
-            await this.databaseService.professionalSchedule.delete({
+            const schedule = await this.databaseService.professionalSchedule.delete({
                 where: {
                     id: ScheduleId
                 }
             });
+            if (schedule === null) {
+                throw new NotFoundException(`Schedule not found with id: ${ScheduleId}`);
+            }
+            return { ok: true };
         } catch (error) {
-            console.log(error);
-            throw new InternalServerErrorException(`Error in deleteSchedule: ${error}`);
+                throw error;
         }
     }
 

@@ -5,42 +5,64 @@ import { DatabaseService } from 'src/database/services/database.service';
 @Injectable()
 export class UsersService {
 
-    constructor(private databaseService: DatabaseService) {}
+    constructor(private databaseService: DatabaseService) { }
 
-    allUsers() {
-        return "All users !"
-    }
+    async getUserById(userId: number): Promise<User | null> {
 
-    async getUserById(userId: number): Promise<User | null>{
-        console.log(userId)
         const userExists = await this.databaseService.user.findUnique({
             where: {
                 id: userId
+            },
+            include: {
+                professionalAppointments: true,
+                clientAppointments: true,
+                schedule: true
             }
         })
-        console.log(userExists);
         if (!userExists) {
             return null;
         }
-        return userExists;
-    }
-    
-    async getUserByField(value: string): Promise<User[] | []> {
-        const userExists = await this.databaseService.user.findMany({
-            where: {
-                OR: [
-                    { email: value },
-                    { username: value }
-                ] 
-            }
-        })
-       
-        if (!userExists) {
-            return [];
+        let user = userExists;
+        if(user.user_role_id === 1) {
+            delete user.clientAppointments;
+        } else {
+            delete user.professionalAppointments;
+            delete user.schedule;
         }
-      
-        return userExists;
+        return user;
     }
-    
+
+    async getUserByField(value: string): Promise<User[] | []> {
+        try {
+            const userExists = await this.databaseService.user.findMany({
+                where: {
+                    OR: [
+                        { email: value },
+                        { username: value }
+                    ]
+                },
+                include: {
+                    professionalAppointments: true,
+                    clientAppointments: true,
+                    schedule: true
+                }
+            })
+            if (!userExists) {
+                return [];
+            }
+            let user = userExists[0];
+            if(user.user_role_id === 1) {
+                delete user.clientAppointments;
+            } else {
+                delete user.professionalAppointments;
+                delete user.schedule;
+            }
+            return userExists;
+        } catch (error) {
+            throw error;
+        }
+
+    }
+
 
 }

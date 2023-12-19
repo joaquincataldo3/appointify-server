@@ -14,7 +14,6 @@ export class RoleAuthorizationGuard implements CanActivate {
       context.getClass(),
     ]);
     const requiredRole = metadataRoles[0]
-    console.log(requiredRole)
 
     // si no hay roles especificados, retorna true
     if (!requiredRole) {
@@ -22,7 +21,7 @@ export class RoleAuthorizationGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    console.log(user.user_role_id)
+
     // comparamos
     if (user.user_role_id !== requiredRole) {
       throw new UnauthorizedException('User does not have the required role');

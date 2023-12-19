@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, ConflictException, Controller, Get, HttpCode, InternalServerErrorException, NotFoundException, Post, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../service/auth.service';
 import { SignUpDto, UserSignInDto } from '../dto/dto';
@@ -6,6 +6,8 @@ import { AuthenticationGuard } from '../guards/authentication/authentication.gua
 import { Response } from 'express';
 import { GetUserDecorator } from '../../utils/decorators/user/getUser.decorator';
 import { RequestUser, UserSignInReturn } from '../interfaces/interfaces';
+import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
+import { serverErrorReturn } from 'src/utils/constants/global/global.constants';
 
 
 // swagger tag
@@ -19,20 +21,47 @@ export class AuthController {
 
     @UseGuards(AuthenticationGuard)
     @Get('logout')
-    async logout (@Res({passthrough: true}) res: Response, @GetUserDecorator() user: RequestUser): Promise<string> {
-        return await this.authService.logout(res, user)
+    async logout (@Res({passthrough: true}) res: Response, @GetUserDecorator() user: RequestUser): Promise<RequestSuccessNoEntity> {
+        try {
+            return await this.authService.logout(res, user)
+        } catch (error) {
+            if(error instanceof NotFoundException) {
+                throw error;
+            }   
+            throw new InternalServerErrorException(serverErrorReturn)
+        }
+        
     }
 
     @Post('sign-in')
     async signIn (@Body() signInDto: UserSignInDto, @Res({passthrough: true}) res: Response): Promise<UserSignInReturn> {
-        return await this.authService.signIn(signInDto, res)
+        try {
+            return await this.authService.signIn(signInDto, res)
+        } catch (error) {
+
+            if (error instanceof NotFoundException) {
+                throw error;
+            } else if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+
+            throw new InternalServerErrorException(serverErrorReturn)
+        }
+        
     }
 
 
     @Post('sign-up')
-    async signUp (@Body() signUpDto: SignUpDto): Promise<string> {
-        console.log(signUpDto);
-        return await this.authService.signUp(signUpDto);
+    @HttpCode(201)
+    async signUp (@Body() signUpDto: SignUpDto): Promise<RequestSuccessNoEntity> {
+        try {
+            return await this.authService.signUp(signUpDto);
+        } catch (error) {
+            if(error instanceof ConflictException) {
+                throw error;
+            }
+            throw new InternalServerErrorException(serverErrorReturn);
+        }
         
     }
 

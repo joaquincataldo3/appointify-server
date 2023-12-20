@@ -11,6 +11,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+
 model User_Role {
   id Int @default(autoincrement()) @id
   role_name String

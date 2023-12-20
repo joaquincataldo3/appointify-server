@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
-import { SignUpDto, UserSignInDto } from '../dto/dto';
+import { CreateUserDto, UserSignInDto } from '../dto/dto';
 import { compare, hash } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -41,9 +41,9 @@ export class AuthService {
 
     }
 
-    async signUp(signUpDto: SignUpDto): Promise<RequestSuccessNoEntity> {
+    async signUp(createUserDto: CreateUserDto): Promise<RequestSuccessNoEntity> {
         try {
-            const { user_role_id, ...rest } = signUpDto;
+            const { user_role_id, ...rest } = createUserDto;
             const usernameWithNoCapitalLetters = rest.username.toLowerCase();
             const emailWithNoCapitalLetters = rest.email.toLowerCase();
             const userExists = await this.usersService.getUserByField(usernameWithNoCapitalLetters);

@@ -7,3 +7,4 @@ export const appointmentIdParam = 'appointmentId';
 
 // errors
 export const serverErrorReturn = 'Unexpected server error';
+export const PrismaNotFoundCode = "P2025";

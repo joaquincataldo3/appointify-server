@@ -3,11 +3,11 @@ import { ApiTags } from '@nestjs/swagger';
 import { ProfessionalScheduleService } from '../service/professional_schedule.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
-import { professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
-import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
+import { PrismaNotFoundCode, professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
+import { CustomValuesConflict, RecordNotFoundException } from 'src/utils/custom-exceptions/custom.exceptions';
 import { IsSameProfessionalGuard } from 'src/auth/guards/authorization/isSameProfessional.guard';
 import { Schedule } from '../interfaces/interfaces';
-import { ProfessionalSchedule } from '@prisma/client';
+import { Prisma, ProfessionalSchedule } from '@prisma/client';
 import { BatchPayload } from 'src/utils/global-interfaces/global.interfaces';
 
 @UseGuards(AuthenticationGuard)
@@ -47,10 +47,10 @@ export class ProfessionalScheduleController {
         try {
             return await this.ProfessionalScheduleService.updateSchedule(professionalId, newSchedule);
         } catch (error) {
-            if(error instanceof NotFoundException) {
-                throw error;
-            }
-            throw new InternalServerErrorException(serverErrorReturn); 
+            if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === PrismaNotFoundCode) {
+                throw new RecordNotFoundException();
+            } 
+            throw new InternalServerErrorException(serverErrorReturn);
         }
     }
 
@@ -60,9 +60,9 @@ export class ProfessionalScheduleController {
         try {
             return await this.ProfessionalScheduleService.deleteSchedule(scheduleId);
         } catch (error) {
-            if(error instanceof NotFoundException) {
-                throw error;
-            }
+            if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === PrismaNotFoundCode) {
+                throw new RecordNotFoundException();
+            } 
             throw new InternalServerErrorException(serverErrorReturn);
         }
     }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { CreateUserDto } from 'src/auth/dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
+import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 
 
 @Injectable()
@@ -74,14 +75,24 @@ export class UsersService {
                 },
                 data: updateUserDto
             })
-            if(!updatedUser) {
-                throw new NotFoundException('User not found');
-            }
             return updatedUser;
         } catch (error) {
             throw error;
         }
         
+    }
+
+    async deleteUser(userId: number): Promise<RequestSuccessNoEntity> {
+        try {
+            await this.databaseService.user.delete({
+                where: {
+                    id: userId
+                }
+            })
+            return { ok: true }
+        } catch (error) {
+            throw error;
+        }
     }
 
 }

@@ -51,12 +51,15 @@ export class AuthController {
     }
 
 
+
     @Post('sign-up')
     @HttpCode(201)
     async signUp (@Body() signUpDto: CreateUserDto): Promise<RequestSuccessNoEntity> {
         try {
+            console.log(signUpDto)
             return await this.authService.signUp(signUpDto);
         } catch (error) {
+            console.log(error)
             if(error instanceof ConflictException) {
                 throw error;
             }

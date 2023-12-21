@@ -50,10 +50,12 @@ export class UsersService {
                     schedule: true
                 }
             })
-            if (!userExists) {
+            if (userExists.length === 0) {
                 return [];
             }
+            console.log(userExists);
             let user = userExists[0];
+            console.log({getUser: user})
             if(user.user_role_id === 1) {
                 delete user.clientAppointments;
             } else {

@@ -8,8 +8,10 @@ import { CreateUserDto } from 'src/auth/dto/dto';
 import { Prisma } from '@prisma/client';
 import { RecordNotFoundException } from 'src/utils/custom-exceptions/custom.exceptions';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @UseGuards(AuthenticationGuard)
+@ApiBearerAuth()
 @UseGuards(IsSameUserGuard)
 
 @Controller('users')

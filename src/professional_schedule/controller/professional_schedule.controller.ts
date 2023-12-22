@@ -1,19 +1,17 @@
 import { Body, Controller, Delete, Get, HttpCode, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ProfessionalScheduleService } from '../service/professional_schedule.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
 import { PrismaNotFoundCode, professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
 import { CustomValuesConflict, RecordNotFoundException } from 'src/utils/custom-exceptions/custom.exceptions';
 import { IsSameProfessionalGuard } from 'src/auth/guards/authorization/isSameProfessional.guard';
-import { Schedule } from '../interfaces/interfaces';
-import { Prisma, ProfessionalSchedule } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { BatchPayload } from 'src/utils/global-interfaces/global.interfaces';
 
 @UseGuards(AuthenticationGuard)
-
+@ApiBearerAuth()
 @Controller('professional-schedule')
-
 @ApiTags('ProfessionalSchedule')
 
 export class ProfessionalScheduleController {

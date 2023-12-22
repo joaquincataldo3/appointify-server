@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CreateRoleDto } from '../dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
-import { BatchPayload } from 'src/utils/global-interfaces/global.interfaces';
+
 
 @Injectable()
 export class UserRolesService {

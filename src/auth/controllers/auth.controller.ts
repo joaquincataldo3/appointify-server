@@ -1,5 +1,5 @@
 import { Body, ConflictException, Controller, Get, HttpCode, InternalServerErrorException, NotFoundException, Post, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../service/auth.service';
 import { CreateUserDto, UserSignInDto } from '../dto/dto';
 import { AuthenticationGuard } from '../guards/authentication/authentication.guard';
@@ -9,17 +9,15 @@ import { RequestUser, UserSignInReturn } from '../interfaces/interfaces';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 import { serverErrorReturn } from 'src/utils/constants/global/global.constants';
 
-
-// swagger tag
 @ApiTags('Auth')
-
-// prefix
 @Controller('auth')
+
 export class AuthController {
 
     constructor (private authService: AuthService) {}
 
     @UseGuards(AuthenticationGuard)
+    @ApiBearerAuth()
     @Get('logout')
     async logout (@Res({passthrough: true}) res: Response, @GetUserDecorator() user: RequestUser): Promise<RequestSuccessNoEntity> {
         try {

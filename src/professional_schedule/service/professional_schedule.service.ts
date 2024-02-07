@@ -64,8 +64,6 @@ export class ProfessionalScheduleService {
             if (professionalSchedule.length === 0) {
                 return false
             }
-            
-            
             return professionalSchedule;
         } catch (error) {
             
@@ -96,10 +94,9 @@ export class ProfessionalScheduleService {
        
     }
 
-    async createSchedule(createScheduleBody: ProfessionalScheduleInBody): Promise<Schedule> {
+    async createSchedule(createScheduleBody: ProfessionalScheduleInBody, professionalId: number): Promise<Schedule> {
         try {
-                const { professional_id } = createScheduleBody;
-                this.schedulesCreated.professional_id = professional_id;
+                this.schedulesCreated.professional_id = professionalId;
                 const schedule = createScheduleBody.schedule;
                 for (let i = 0; i < schedule.length; i++) {
                     const { week_day_id, ...rest } = schedule[i];
@@ -107,10 +104,10 @@ export class ProfessionalScheduleService {
                     if (rest.start_time >= rest.end_time || rest.break_time_start >= rest.break_time_stop) {
                         throw new CustomValuesConflict('Time intervals no valid');
                     }
-                    const isIdCorrect = await this.usersService.getUserById(professional_id);
+                    const isIdCorrect = await this.usersService.getUserById(professionalId);
                     
                     if (!isIdCorrect) {
-                        throw new NotFoundException(`Professional not found with id: ${professional_id}`);
+                        throw new NotFoundException(`Professional not found with id: ${professionalId}`);
                     }
                     const isAlreadyAnScheduleForTheDay = await this.getScheduleByWeekDay(week_day_id);
                     if(isAlreadyAnScheduleForTheDay) {
@@ -119,7 +116,7 @@ export class ProfessionalScheduleService {
                     }
                     const work = await this.databaseService.professionalSchedule.create({
                         data: {
-                            professional: { connect: { id: professional_id } },
+                            professional: { connect: { id: professionalId } },
                             weekDay: { connect: { id: week_day_id } },
                             ...rest
                         }

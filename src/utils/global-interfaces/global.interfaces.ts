@@ -5,3 +5,8 @@ export interface RequestSuccessNoEntity {
 export interface BatchPayload {
     count: number
 }
+
+export interface GetSplittedDateReturn {
+    hour: number
+    minutes: number
+}

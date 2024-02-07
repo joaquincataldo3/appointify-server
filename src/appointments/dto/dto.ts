@@ -24,6 +24,5 @@ export class CreateAppointmentDto {
     @ApiProperty()
     @IsNotEmpty()
     appt_hour_end: Date
-
 }
 

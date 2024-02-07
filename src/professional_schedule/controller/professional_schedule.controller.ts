@@ -18,18 +18,19 @@ export class ProfessionalScheduleController {
 
     constructor(private ProfessionalScheduleService: ProfessionalScheduleService) {}
 
-    @ApiParam({name: professionalIdParam})
     @Get(`:${professionalIdParam}`)
+    @ApiParam({name: professionalIdParam})
     async getProfessionalSchedule (@Param(professionalIdParam, ParseIntPipe) professionalId: number) {
         return await this.ProfessionalScheduleService.getProfessionalSchedule(professionalId);
     }
 
-    @Post('create') 
+    @Post(`create/:${professionalIdParam}`) 
+    @ApiParam({name: professionalIdParam})
     @UseGuards(IsSameProfessionalGuard)
     @HttpCode(201)
-    async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleInBody) {
+    async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleInBody, @Param(professionalIdParam, ParseIntPipe) professionalId: number) {
         try {
-            return await this.ProfessionalScheduleService.createSchedule(createScheduleBody);
+            return await this.ProfessionalScheduleService.createSchedule(createScheduleBody, professionalId);
         } catch (error) {
             if (error instanceof NotFoundException) {
                 throw error;

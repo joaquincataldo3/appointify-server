@@ -35,13 +35,8 @@ export class ProfessionalSchedule {
 }
 
 export class ProfessionalScheduleInBody {
-    @ApiProperty()
-    @IsNotEmpty()
-    @IsNumber()
-    professional_id: number
 
     @IsNotEmpty()
     schedule: ProfessionalSchedule[]
-
 }
 

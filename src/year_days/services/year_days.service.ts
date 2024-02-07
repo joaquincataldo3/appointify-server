@@ -7,6 +7,11 @@ export class YearDaysService {
 
     constructor(private databaseService: DatabaseService) {}
 
+    getWeekDay (date: Date): number {
+        const numeroDia = date.getDay();
+        return numeroDia + 1
+    }
+
     async getYearDay(yearDayId: number): Promise<YearDay | false> {
         try {
             const yearDay = await this.databaseService.yearDay.findUnique({

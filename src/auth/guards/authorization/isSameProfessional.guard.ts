@@ -7,8 +7,7 @@ export class IsSameProfessionalGuard implements CanActivate {
     const user_id = request.params.professionalId;
     const authenticatedUserId = request.user.id;
 
-    // Realiza la lógica de autorización aquí...
-    if (user_id !== authenticatedUserId) {
+    if (user_id != authenticatedUserId) {
       throw new ForbiddenException('You are not authorized to perform this action.');
     }
 

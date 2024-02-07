@@ -3,7 +3,7 @@ import { CreateAppointmentDto } from '../dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
 import { Appointment, User } from '@prisma/client';
 import { ProfessionalScheduleService } from 'src/professional_schedule/service/professional_schedule.service';
-import { addMinutes, set, getHours, getMinutes } from 'date-fns';
+import { addMinutes, set } from 'date-fns';
 import { AvailableAppointmentsInterface, AppointmentValuesAndCondition, CalculateTimeOccupied } from 'src/auth/interfaces/interfaces';
 import { YearDaysService } from 'src/year_days/services/year_days.service';
 import { UsersService } from 'src/users/services/users.service';

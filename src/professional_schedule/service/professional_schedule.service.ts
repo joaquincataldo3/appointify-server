@@ -113,12 +113,9 @@ export class ProfessionalScheduleService {
                         throw new NotFoundException(`Professional not found with id: ${professional_id}`);
                     }
                     const isAlreadyAnScheduleForTheDay = await this.getScheduleByWeekDay(week_day_id);
-                    console.log(isAlreadyAnScheduleForTheDay);
                     if(isAlreadyAnScheduleForTheDay) {
-                   
                         const day = isAlreadyAnScheduleForTheDay.weekDay.day_name;
-                        throw new CustomValuesConflict(`There is already a schedule set up for the day ${day}`)
-                        
+                        throw new CustomValuesConflict(`There is already a schedule set up for the day ${day}`)               
                     }
                     const work = await this.databaseService.professionalSchedule.create({
                         data: {

@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ProfessionalScheduleService } from '../service/professional_schedule.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
@@ -18,6 +18,7 @@ export class ProfessionalScheduleController {
 
     constructor(private ProfessionalScheduleService: ProfessionalScheduleService) {}
 
+    @ApiParam({name: professionalIdParam})
     @Get(`:${professionalIdParam}`)
     async getProfessionalSchedule (@Param(professionalIdParam, ParseIntPipe) professionalId: number) {
         return await this.ProfessionalScheduleService.getProfessionalSchedule(professionalId);
@@ -40,6 +41,7 @@ export class ProfessionalScheduleController {
     }
 
     @Put(`update/:${professionalIdParam}`)
+    @ApiParam({name: professionalIdParam})
     @UseGuards(IsSameProfessionalGuard)
     async updateSchedule(@Param(professionalIdParam, ParseIntPipe) professionalId: number, newSchedule: ProfessionalScheduleInBody): Promise<BatchPayload>{
         try {
@@ -51,8 +53,10 @@ export class ProfessionalScheduleController {
             throw new InternalServerErrorException(serverErrorReturn);
         }
     }
-
+    
     @Delete(`delete/:${professionalIdParam}/:${scheduleIdParam}`)
+    @ApiParam({name: professionalIdParam})
+    @ApiParam({name: scheduleIdParam})
     @UseGuards(IsSameProfessionalGuard)
     async deleteProfessionalSchedule(@Param(scheduleIdParam, ParseIntPipe) scheduleId: number) {
         try {

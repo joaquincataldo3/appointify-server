@@ -10,10 +10,8 @@ export class ProfessionalHoursService {
 
     async createProfessionalHours(createProfessionalHoursObj: CreateProfessionalHours[]): Promise<boolean> {
         try {
-            
             return true;
         } catch (error) {
-            console.log(error);
             throw new InternalServerErrorException('Error in createProfessionalHours');
         }
     }

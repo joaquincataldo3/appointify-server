@@ -7,8 +7,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({whitelist: true}))
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+    .setTitle('Appointify')
+    .setDescription('The new DOCS for Appointify, the new appointment app')
     .setVersion('1.0')
     .addTag('cats')
     .build();

@@ -64,7 +64,6 @@ export class TokensBlacklistService {
                 }
             })
         } catch (error) {
-            console.log(error);
             throw new InternalServerErrorException('Error in deleteToken')
         }
     }

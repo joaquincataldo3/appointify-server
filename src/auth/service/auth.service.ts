@@ -35,7 +35,6 @@ export class AuthService {
                 secret
             });
         } catch (error) {
-            console.log(error);
             throw new InternalServerErrorException('Error in signToken')
         }
 
@@ -44,7 +43,6 @@ export class AuthService {
     async signUp(createUserDto: CreateUserDto): Promise<RequestSuccessNoEntity> {
         try {
             const { user_role_id, ...rest } = createUserDto;
-            console.log(user_role_id)
             const usernameWithNoCapitalLetters = rest.username.toLowerCase();
             const emailWithNoCapitalLetters = rest.email.toLowerCase();
             const userExists = await this.usersService.getUserByField(usernameWithNoCapitalLetters);

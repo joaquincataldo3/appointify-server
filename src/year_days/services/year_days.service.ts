@@ -19,11 +19,8 @@ export class YearDaysService {
             }
             return yearDay;
         } catch (error) {
-            console.log(error);
             throw new InternalServerErrorException(`Error in getYearDay ${error}`)
         }
-
-       
     }
 
 }

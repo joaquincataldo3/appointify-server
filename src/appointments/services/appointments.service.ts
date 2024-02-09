@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, Param } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException, Param } from '@nestjs/common';
 import { CreateAppointmentDto } from '../dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
 import { Appointment, User } from '@prisma/client';
@@ -23,14 +23,71 @@ export class AppointmentsService {
     ) { }
 
     getMinuteDifferenceBetweenHours = (apptStart: Date, apptEnd: Date): number => {
+        const apptStartDate = new Date(apptStart);
+        const apptEndDate = new Date(apptEnd);
         // Obtener la diferencia en milisegundos entre las dos fechas
-        const milisecondsDifference: number = Math.abs(apptEnd.getTime() - apptStart.getTime());
-
+        const milisecondsDifference: number = Math.abs(apptStartDate.getTime() - apptEndDate.getTime());
         // Convertir la diferencia a minutos
         const minutesDifference: number = Math.floor(milisecondsDifference / (1000 * 60));
-        console.log({diferencia: minutesDifference});
-
         return minutesDifference;
+    }
+
+    async isAppointmentAvailable(yearDayId: number, professionalId: number, appointmentStartTime: Date, appointmentEndTime: Date): Promise<boolean> {
+        try {
+            const professionalExists = await this.usersService.getUserById(professionalId);
+            if (!professionalExists) {
+                throw new NotFoundException(`User does not exist with id: ${professionalId}`);
+            }
+    
+            const yearDayExists = await this.yearDaysService.getYearDay(yearDayId);
+            if (!yearDayExists) {
+                throw new NotFoundException(`Year day does not exist with id: ${yearDayId}`);
+            }
+            const yearDayDate = yearDayExists.day;
+            const dayOfTheWeek = new Date(yearDayDate).getDay() + 1;
+            // Obtener el horario de almuerzo del profesional
+            const professionalSchedule = await this.professionalScheduleService.getProfessionalSchedule(professionalId, dayOfTheWeek);
+            if (!professionalSchedule) {
+                throw new NotFoundException(`Professional schedule not found for professional ${professionalId} and year day ${yearDayId}`);
+            }
+    
+            const { break_time_start, break_time_stop } = professionalSchedule[0];
+    
+            // Verificar si el horario de la cita está dentro del horario de almuerzo
+            const isDuringLunch = this.isTimeWithinCertainInterval(appointmentStartTime, { start: break_time_start, end: break_time_stop }) ||
+                                  this.isTimeWithinCertainInterval(appointmentEndTime, { start: break_time_start, end: break_time_stop });
+    
+            if (isDuringLunch) {
+                return false; // El horario de la cita cae dentro del horario de almuerzo
+            }
+    
+            // Verificar si hay una cita en el horario específico
+            const takenAppts = await this.databaseService.appointment.findMany({
+                where: {
+                    professional_id: professionalId,
+                    year_day_id: yearDayId
+                }
+            });
+    
+            const isAppointmentOccupied = takenAppts.some((appointment) => {
+                const apptStart = new Date(appointment.appt_hour_start);
+                const apptEnd = new Date(appointment.appt_hour_end);
+    
+                // Verificar si el horario de la cita coincide exactamente con el horario especificado
+                const isExactStart = apptStart.getTime() === appointmentStartTime.getTime();
+                const isExactEnd = apptEnd.getTime() === appointmentEndTime.getTime();
+                const isOverlap = (appointmentStartTime > apptStart && appointmentStartTime < apptEnd) || 
+                                  (appointmentEndTime > apptStart && appointmentEndTime < apptEnd) ||
+                                  (appointmentStartTime <= apptStart && appointmentEndTime >= apptEnd);
+    
+                return isExactStart || isExactEnd || isOverlap;
+            });
+    
+            // Si hay una cita ocupando el horario especificado, retornar false, de lo contrario retornar true
+            return !isAppointmentOccupied;
+        } catch (error) {
+            throw error;
+        }
     }
 
     async getAppointment(appointmentId: number): Promise<Appointment | null> {
@@ -79,27 +136,33 @@ export class AppointmentsService {
                 throw new CustomValuesConflict('La hora de inicio es mayor a la de terminación');
             }
             const yearDay = await this.yearDaysService.getYearDay(year_day_id);
-            if(!yearDay) {
+            if (!yearDay) {
                 throw new NotFoundException('Día del año no encontrado')
             }
             // agarramos el weekday del year day de la cita
-            const dayNumber = this.yearDaysService.getWeekDay(yearDay.day);
+            const yearDayExists = await this.yearDaysService.getYearDay(year_day_id);
+            if (!yearDayExists) {
+                throw new NotFoundException(`User does not exists with id: ${year_day_id}`)
+            }
+            const yearDayDate = yearDayExists.day;
+            const dayOfTheWeek = new Date(yearDayDate).getDay() + 1;
             // agarramos el schedule en el día del profesional
-            const professionalSchedule = await this.professionalScheduleService.getScheduleByWeekDay(dayNumber);
-            if(!professionalSchedule) {
+            const professionalSchedule = await this.professionalScheduleService.getProfessionalSchedule(professional_id, dayOfTheWeek);
+            if (!professionalSchedule) {
                 throw new NotFoundException('Agenda no encontrada')
             }
-            // probamos que la diferencia entre las horas sean las mismas que el intervalo del profesional ese día
-            const differenceBetweenHours = this.getMinuteDifferenceBetweenHours(appt_hour_start, appt_hour_end);
-            const isSameInterval = professionalSchedule.appt_interval !== differenceBetweenHours;
-            if(isSameInterval){
-                throw new CustomValuesConflict('Los intervalos no son los mismos');
+            const apptHourStartDate = new Date(appt_hour_start);
+            const apptHourEndDate = new Date(appt_hour_end);
+            const isApptAvailable = await this.isAppointmentAvailable(year_day_id, professional_id, apptHourStartDate, apptHourEndDate);
+            if (!isApptAvailable) {
+                throw new ConflictException('El horario de la cita no está disponible');
             }
+
             const newAppointment = await this.databaseService.appointment.create({
                 // many to many
                 data: {
-                    appt_hour_end,
-                    appt_hour_start,
+                    appt_hour_end: apptHourEndDate,
+                    appt_hour_start: apptHourStartDate,
                     client: {
                         connect: { id: user_id }
                     },
@@ -113,16 +176,17 @@ export class AppointmentsService {
             });
             return newAppointment;
         } catch (error) {
+            console.log(error);
             throw error;
         }
     }
 
 
-    isTimeWithinCertainInterval(timeToCheck: Date, workingHoursObj: AppointmentValuesAndCondition): boolean {
-        const { start, end } = workingHoursObj
-
+    isTimeWithinCertainInterval(timeToCheck: string | Date, workingHoursObj: AppointmentValuesAndCondition): boolean {
+        const { start, end } = workingHoursObj;
+        const newDate = new Date (timeToCheck);
         // convertimos las horas a minutos
-        const time = timeToCheck.getHours() * 60 + timeToCheck.getMinutes();
+        const time = newDate.getHours() * 60 + newDate.getMinutes();
 
         // Convertimos la hora de inicio a minutos
         const startTime = start.getHours() * 60 + end.getMinutes();
@@ -135,11 +199,8 @@ export class AppointmentsService {
 
 
     isTimeOccupied(timeOccupiedObj: CalculateTimeOccupied): boolean {
-
         const { currentTime, endDay, takenAppts, lunchStart, lunchEnd } = timeOccupiedObj
-
         let isDuringLunch: boolean;
-
         if (lunchStart === null && lunchEnd === null) {
             isDuringLunch = false;
         } else {
@@ -148,37 +209,28 @@ export class AppointmentsService {
                 &&
                 this.isTimeWithinCertainInterval(endDay, { start: lunchStart, end: lunchEnd });
         }
-
-
         // Si no hay citas, entonces no está ocupado
         if (takenAppts.length === 0) {
             return isDuringLunch;
         }
-       
-
         // Verificar superposición con citas existentes
         const isOverlap = takenAppts.some((appointment) => {
             const apptStart = new Date(appointment.appt_hour_start);
             const apptEnd = new Date(appointment.appt_hour_end);
-        
+
             const apptStartMinutes = apptStart.getHours() * 60 + apptStart.getMinutes();
             const apptEndMinutes = apptEnd.getHours() * 60 + apptEnd.getMinutes();
             const currentTimeMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-        
+
             // Verificar si currentTime está dentro del intervalo de la cita
             const isWithinInterval = (currentTimeMinutes > apptStartMinutes && currentTimeMinutes < apptEndMinutes) || (apptStartMinutes <= currentTimeMinutes && apptEndMinutes >= currentTimeMinutes);
-        
+
             // Verificar si currentTime coincide exactamente con el inicio o final de la cita
             const isExactStart = currentTime.getTime() === apptStart.getTime();
             const isExactEnd = currentTime.getTime() === apptEnd.getTime();
-        
+
             const isOverlap = isWithinInterval || isExactStart || isExactEnd;
 
-            console.log({apptStart: apptStart})
-            console.log({apptEnd: apptEnd})
-            console.log({apptcurrentTime: currentTime})
-            console.log(isOverlap); // Muestra si hay superposición o no
-        
             return isOverlap;
         });
         return isDuringLunch || isOverlap;
@@ -196,9 +248,8 @@ export class AppointmentsService {
                 throw new NotFoundException(`User does not exists with id: ${yearDayId}`)
             }
             const yearDayDate = yearDayExists.day;
-            console.log(yearDayDate)
             const dayOfTheWeek = new Date(yearDayDate).getDay() + 1;
-           
+
             const professionalSchedule = await this.professionalScheduleService.getProfessionalSchedule(professionalId, dayOfTheWeek);
             if (!professionalSchedule) {
                 throw new NotFoundException(`Professional does not work with in the day with id: ${yearDayId}`)

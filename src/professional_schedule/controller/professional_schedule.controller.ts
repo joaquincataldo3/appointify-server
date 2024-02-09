@@ -6,8 +6,10 @@ import { AuthenticationGuard } from 'src/auth/guards/authentication/authenticati
 import { PrismaNotFoundCode, professionalIdParam, scheduleIdParam, serverErrorReturn } from 'src/utils/constants/global/global.constants';
 import { CustomValuesConflict, RecordNotFoundException } from 'src/utils/custom-exceptions/custom.exceptions';
 import { IsSameProfessionalGuard } from 'src/auth/guards/authorization/isSameProfessional.guard';
-import { Prisma } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { BatchPayload } from 'src/utils/global-interfaces/global.interfaces';
+import { GetUserDecorator } from 'src/utils/decorators/user/getUser.decorator';
+import { UpdateScheduleReturn } from '../interfaces/interfaces';
 
 @UseGuards(AuthenticationGuard)
 @ApiBearerAuth()
@@ -18,17 +20,17 @@ export class ProfessionalScheduleController {
 
     constructor(private ProfessionalScheduleService: ProfessionalScheduleService) {}
 
-    @Get(`:${professionalIdParam}`)
-    @ApiParam({name: professionalIdParam})
-    async getProfessionalSchedule (@Param(professionalIdParam, ParseIntPipe) professionalId: number) {
+    @Get(':professionalId')
+    @ApiParam({name: 'professionalId'})
+    async getProfessionalSchedule (@Param('professionalId', ParseIntPipe) professionalId: number) {
         return await this.ProfessionalScheduleService.getProfessionalSchedule(professionalId);
     }
 
-    @Post(`create/:${professionalIdParam}`) 
-    @ApiParam({name: professionalIdParam})
+    @Post('create/:professionalId') 
+    @ApiParam({name: 'professionalId'})
     @UseGuards(IsSameProfessionalGuard)
     @HttpCode(201)
-    async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleInBody, @Param(professionalIdParam, ParseIntPipe) professionalId: number) {
+    async createProfessionalWorkDay (@Body() createScheduleBody: ProfessionalScheduleInBody, @Param('professionalId', ParseIntPipe) professionalId: number) {
         try {
             return await this.ProfessionalScheduleService.createSchedule(createScheduleBody, professionalId);
         } catch (error) {
@@ -41,10 +43,10 @@ export class ProfessionalScheduleController {
         }
     }
 
-    @Put(`update/:${professionalIdParam}`)
-    @ApiParam({name: professionalIdParam})
+    @Put('update/:professionalId')
+    @ApiParam({name: 'professionalId'})
     @UseGuards(IsSameProfessionalGuard)
-    async updateSchedule(@Param(professionalIdParam, ParseIntPipe) professionalId: number, newSchedule: ProfessionalScheduleInBody): Promise<BatchPayload>{
+    async updateSchedule(@Param('professionalId', ParseIntPipe) professionalId: number, @Body() newSchedule: ProfessionalScheduleInBody): Promise<UpdateScheduleReturn>{
         try {
             return await this.ProfessionalScheduleService.updateSchedule(professionalId, newSchedule);
         } catch (error) {
@@ -55,11 +57,10 @@ export class ProfessionalScheduleController {
         }
     }
     
-    @Delete(`delete/:${professionalIdParam}/:${scheduleIdParam}`)
-    @ApiParam({name: professionalIdParam})
-    @ApiParam({name: scheduleIdParam})
+    @Delete('delete/:scheduleId')
+    @ApiParam({name: 'scheduleId'})
     @UseGuards(IsSameProfessionalGuard)
-    async deleteProfessionalSchedule(@Param(scheduleIdParam, ParseIntPipe) scheduleId: number) {
+    async deleteProfessionalSchedule(@Param('scheduleId', ParseIntPipe) scheduleId: number) {
         try {
             return await this.ProfessionalScheduleService.deleteSchedule(scheduleId);
         } catch (error) {

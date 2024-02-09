@@ -17,7 +17,7 @@ export class AuthController {
     constructor (private authService: AuthService) {}
 
     @UseGuards(AuthenticationGuard)
-    @ApiHeader(authorizationTokenSwagger)
+    @ApiBearerAuth()
     @Get('logout')
     async logout (@Res({passthrough: true}) res: Response, @GetUserDecorator() user: RequestUser): Promise<RequestSuccessNoEntity> {
         try {

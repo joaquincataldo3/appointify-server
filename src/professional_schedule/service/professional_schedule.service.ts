@@ -4,7 +4,7 @@ import { DatabaseService } from 'src/database/services/database.service';
 import { UsersService } from 'src/users/services/users.service';
 import { ProfessionalScheduleInBody } from '../dto/dto';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
-import { Schedule } from '../interfaces/interfaces';
+import { Schedule, UpdateScheduleReturn } from '../interfaces/interfaces';
 import { BatchPayload, RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
 
 @Injectable()
@@ -99,7 +99,7 @@ export class ProfessionalScheduleService {
                 this.schedulesCreated.professional_id = professionalId;
                 const schedule = createScheduleBody.schedule;
                 for (let i = 0; i < schedule.length; i++) {
-                    const { week_day_id, ...rest } = schedule[i];
+                    const { day_of_the_week_id, ...rest } = schedule[i];
                     
                     if (rest.start_time >= rest.end_time || rest.break_time_start >= rest.break_time_stop) {
                         throw new CustomValuesConflict('Time intervals no valid');
@@ -109,7 +109,7 @@ export class ProfessionalScheduleService {
                     if (!isIdCorrect) {
                         throw new NotFoundException(`Professional not found with id: ${professionalId}`);
                     }
-                    const isAlreadyAnScheduleForTheDay = await this.getScheduleByWeekDay(week_day_id);
+                    const isAlreadyAnScheduleForTheDay = await this.getScheduleByWeekDay(day_of_the_week_id);
                     if(isAlreadyAnScheduleForTheDay) {
                         const day = isAlreadyAnScheduleForTheDay.weekDay.day_name;
                         throw new CustomValuesConflict(`There is already a schedule set up for the day ${day}`)               
@@ -117,7 +117,7 @@ export class ProfessionalScheduleService {
                     const work = await this.databaseService.professionalSchedule.create({
                         data: {
                             professional: { connect: { id: professionalId } },
-                            weekDay: { connect: { id: week_day_id } },
+                            weekDay: { connect: { id: day_of_the_week_id } },
                             ...rest
                         }
                     })
@@ -136,33 +136,37 @@ export class ProfessionalScheduleService {
         }
     }
 
-    async updateSchedule(professionalId: number, updateScheduleBody: ProfessionalScheduleInBody): Promise<BatchPayload> {
+    async updateSchedule(professionalId: number, updateScheduleBody: ProfessionalScheduleInBody): Promise<UpdateScheduleReturn> {
         try {
-            const affectedRows = await this.databaseService.professionalSchedule.updateMany({
-                where: {
-                    professional_id: professionalId
-                },
-                data: updateScheduleBody
-            })
-            if(affectedRows.count === 0) {
-                throw new NotFoundException('Schedule not found')
+            let totalAffectedRows = 0;
+            for (let i = 0; i < updateScheduleBody.schedule.length; i++) {
+                const { day_of_the_week_id } = updateScheduleBody.schedule[i];
+                const scheduleUpdated = await this.databaseService.professionalSchedule.updateMany({
+                    where: {
+                        professional_id: professionalId,
+                        day_of_the_week_id
+                    },
+                    data: updateScheduleBody.schedule[i]
+                });
+                totalAffectedRows += scheduleUpdated.count;
             }
-            return affectedRows;
+            return {affectedRows: totalAffectedRows, length: updateScheduleBody.schedule.length}
         } catch (error) {
+            console.log(error)
             throw error;
         }
        
     }
 
-    async deleteSchedule(ScheduleId: number): Promise<RequestSuccessNoEntity> {
+    async deleteSchedule(scheduleId: number): Promise<RequestSuccessNoEntity> {
         try {
             const schedule = await this.databaseService.professionalSchedule.delete({
                 where: {
-                    id: ScheduleId
+                    id: scheduleId
                 }
             });
             if (schedule === null) {
-                throw new NotFoundException(`Schedule not found with id: ${ScheduleId}`);
+                throw new NotFoundException(`Schedule not found with id: ${scheduleId}`);
             }
             return { ok: true };
         } catch (error) {

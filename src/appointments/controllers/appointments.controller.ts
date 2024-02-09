@@ -1,26 +1,26 @@
 import { Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
-import { ApiHeader, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from '@nestjs/swagger';
 import { CreateAppointmentDto } from '../dto/dto';
 import { AppointmentsService } from '../services/appointments.service';
 import { Appointment, User } from '@prisma/client';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
 import { GetUserDecorator } from 'src/utils/decorators/user/getUser.decorator';
 import { AvailableAppointmentsInterface } from 'src/auth/interfaces/interfaces';
-import { appointmentIdParam, authorizationTokenSwagger, professionalIdParam, serverErrorReturn, yearIdParam } from 'src/utils/constants/global/global.constants';
+
 
 @UseGuards(AuthenticationGuard)
 @Controller('appointments')
 @ApiTags('Appointments')
-@ApiHeader(authorizationTokenSwagger)
+@ApiBearerAuth()
 
 export class AppointmentsController {
 
     constructor(private appointmentsService: AppointmentsService) { }
 
-    @ApiParam({name: yearIdParam})
-    @ApiParam({name: professionalIdParam})
-    @Get(`available/:${yearIdParam}/:${professionalIdParam}`)
-    async getAvailableAppointments(@Param(`${yearIdParam}`) yearDayId: string, @Param(`${professionalIdParam}`) professionalId: string): Promise<AvailableAppointmentsInterface[]> {
+    @ApiParam({name: 'yearId'})
+    @ApiParam({name: 'professionalId'})
+    @Get(`available/:yearId/:professionalId`)
+    async getAvailableAppointments(@Param(`${'yearId'}`) yearDayId: string, @Param('professionalId') professionalId: string): Promise<AvailableAppointmentsInterface[]> {
         try {
             const yearIdNumber = Number(yearDayId);
             const professionalIdNumber = Number(professionalId);
@@ -29,13 +29,13 @@ export class AppointmentsController {
             if (error instanceof NotFoundException) {
                 throw error;
             }
-        } throw new InternalServerErrorException(serverErrorReturn);
+        } throw new InternalServerErrorException('Unexpected server error');
 
     }
 
-    @ApiParam({name: yearIdParam})
-    @Get(`booked/:${yearIdParam}`)
-    async get(@Param(`${yearIdParam}`) yearDayId: string, @GetUserDecorator() user: User): Promise<Appointment[]> {
+    @ApiParam({name: 'yearId'})
+    @Get('booked/:yearId')
+    async get(@Param('yearId') yearDayId: string, @GetUserDecorator() user: User): Promise<Appointment[]> {
         const yearIdNumber = Number(yearDayId);
         return await this.appointmentsService.getBookedAppts(yearIdNumber, user);
     }
@@ -45,14 +45,14 @@ export class AppointmentsController {
         try {
             return await this.appointmentsService.createAppointment(createAppointmentDto);
         } catch (error) {
-            throw new InternalServerErrorException(serverErrorReturn);
+            throw new InternalServerErrorException('Unexpected server error');
         }
 
     }
 
-    @ApiParam({name: appointmentIdParam})
-    @Delete(`delete/:${appointmentIdParam}`)
-    async deleteAppointment(@Param(`${appointmentIdParam}`, ParseIntPipe) appointmentId: number, @GetUserDecorator() user: User): Promise<Appointment> {
+    @ApiParam({name: 'appointmentId'})
+    @Delete('delete/:appointmentId')
+    async deleteAppointment(@Param('appointmentId', ParseIntPipe) appointmentId: number, @GetUserDecorator() user: User): Promise<Appointment> {
         try {
             const appointment = await this.appointmentsService.getAppointment(appointmentId);
             const userId = user.id;
@@ -66,7 +66,7 @@ export class AppointmentsController {
             if (error instanceof NotFoundException || error instanceof ForbiddenException) {
                 throw error;
             }
-            throw new InternalServerErrorException(serverErrorReturn);
+            throw new InternalServerErrorException('Unexpected server error');
         }
 
     }

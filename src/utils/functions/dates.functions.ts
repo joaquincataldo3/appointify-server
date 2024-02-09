@@ -1,8 +1,12 @@
 import { GetSplittedDateReturn } from "../global-interfaces/global.interfaces";
 
 export const getSplittedDate = (date: Date): GetSplittedDateReturn => {
-    let dateSplittedReturn: GetSplittedDateReturn;
-    dateSplittedReturn.hour = date.getHours();
-    dateSplittedReturn.minutes = date.getMinutes();
+    const newDate = new Date(date);
+    const hour = newDate.getUTCHours();
+    const minutes = newDate.getMinutes();
+    let dateSplittedReturn: GetSplittedDateReturn = {
+        hour,
+        minutes
+    }
     return dateSplittedReturn;
 }

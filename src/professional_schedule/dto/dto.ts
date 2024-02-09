@@ -5,7 +5,7 @@ export class ProfessionalSchedule {
     @ApiProperty()
     @IsNotEmpty()
     @IsNumber()
-    week_day_id: number
+    day_of_the_week_id: number
     @ApiProperty()
     @IsNotEmpty()
     @IsDate()
@@ -35,7 +35,6 @@ export class ProfessionalSchedule {
 }
 
 export class ProfessionalScheduleInBody {
-
     @IsNotEmpty()
     schedule: ProfessionalSchedule[]
 }

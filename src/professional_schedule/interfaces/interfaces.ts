@@ -13,3 +13,9 @@ export interface Schedule {
     schedule: DaySchedule[]
 }
 
+export interface UpdateScheduleReturn {
+    affectedRows: number
+    length: number
+}
+
+

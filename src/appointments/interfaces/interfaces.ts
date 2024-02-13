@@ -1,4 +1,4 @@
-import { User, YearDay } from "@prisma/client"
+import { Appointment } from "@prisma/client"
 
 export interface GetAvailableApptsParams {
     year_day_id: string
@@ -10,10 +10,7 @@ export interface SetHoursAndMinutes {
     minutes : number
 }
 
-export interface IAppointment {
-    appt_hour_start: Date
-    appt_hour_end: Date
-    client: User
-    professional: User
-    year_day: YearDay
+export interface AppointmentSuccessReturn {
+    appointment: Appointment
+    emailResult: boolean
 }

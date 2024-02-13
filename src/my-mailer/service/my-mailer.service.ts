@@ -2,14 +2,16 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Appointment, User } from '@prisma/client';
-import { IAppointment } from 'src/appointments/interfaces/interfaces';
+import { UsersService } from 'src/users/services/users.service';
+import { SendEmailResult } from '../interfaces/my_mailer.interfaces';
 
 @Injectable()
 export class MyMailerService {
 
     constructor(
         private mailerService: MailerService,
-        private configService: ConfigService
+        private configService: ConfigService,
+        private usersService: UsersService
     ) { }
 
     private appointmentCreateSubject: string = 'Turno creado';
@@ -24,7 +26,12 @@ export class MyMailerService {
         return { ok: result.response === 'OK' ? true : false }
     }
 
-    async sendAppointmentCreatedEmail(user: User, professional: User, appointment: IAppointment, sendTo: string) {
+    async sendAppointmentCreatedEmail(user_id: number, professional_id: number, appointment: Appointment, sendTo: string): Promise<SendEmailResult> {
+        const professional = await this.usersService.getUserById(user_id);
+        const user = await this.usersService.getUserById(professional_id);
+        if(!user || !professional) {
+            return { ok: false };
+        }
         const htmlTemplate = `
             <!DOCTYPE html>
             <html lang="en">
@@ -50,7 +57,12 @@ export class MyMailerService {
         return result;
     }
 
-    async sendAppointmentCanceledEmail(user: User, professional: User, appointment: IAppointment, sendTo: string) {
+    async sendAppointmentCanceledEmail(user_id: number, professional_id: number, appointment: Appointment, sendTo: string) {
+        const professional = await this.usersService.getUserById(user_id);
+        const user = await this.usersService.getUserById(professional_id);
+        if(!user || !professional) {
+            return console.log('Usuario o profesional no encontrados. Error al enviar mail');
+        }
         const htmlTemplate = `
         <!DOCTYPE html>
         <html lang="en">

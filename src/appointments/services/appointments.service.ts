@@ -7,9 +7,10 @@ import { addMinutes, set } from 'date-fns';
 import { AvailableAppointmentsInterface, AppointmentValuesAndCondition, CalculateTimeOccupied } from 'src/auth/interfaces/interfaces';
 import { YearDaysService } from 'src/year_days/services/year_days.service';
 import { UsersService } from 'src/users/services/users.service';
-import { SetHoursAndMinutes } from '../interfaces/interfaces';
+import { AppointmentSuccessReturn, SetHoursAndMinutes } from '../interfaces/interfaces';
 import { getSplittedDate } from 'src/utils/functions/dates.functions';
 import { CustomValuesConflict } from 'src/utils/custom-exceptions/custom.exceptions';
+import { MyMailerService } from 'src/my-mailer/service/my-mailer.service';
 
 
 @Injectable()
@@ -19,7 +20,8 @@ export class AppointmentsService {
         private databaseService: DatabaseService,
         private professionalScheduleService: ProfessionalScheduleService,
         private yearDaysService: YearDaysService,
-        private usersService: UsersService
+        private usersService: UsersService,
+        private myMailerService: MyMailerService
     ) { }
 
     getMinuteDifferenceBetweenHours = (apptStart: Date, apptEnd: Date): number => {
@@ -38,7 +40,7 @@ export class AppointmentsService {
             if (!professionalExists) {
                 throw new NotFoundException(`User does not exist with id: ${professionalId}`);
             }
-    
+
             const yearDayExists = await this.yearDaysService.getYearDay(yearDayId);
             if (!yearDayExists) {
                 throw new NotFoundException(`Year day does not exist with id: ${yearDayId}`);
@@ -50,17 +52,15 @@ export class AppointmentsService {
             if (!professionalSchedule) {
                 throw new NotFoundException(`Professional schedule not found for professional ${professionalId} and year day ${yearDayId}`);
             }
-    
             const { break_time_start, break_time_stop } = professionalSchedule[0];
-    
             // Verificar si el horario de la cita está dentro del horario de almuerzo
             const isDuringLunch = this.isTimeWithinCertainInterval(appointmentStartTime, { start: break_time_start, end: break_time_stop }) ||
-                                  this.isTimeWithinCertainInterval(appointmentEndTime, { start: break_time_start, end: break_time_stop });
-    
+                this.isTimeWithinCertainInterval(appointmentEndTime, { start: break_time_start, end: break_time_stop });
+
             if (isDuringLunch) {
                 return false; // El horario de la cita cae dentro del horario de almuerzo
             }
-    
+
             // Verificar si hay una cita en el horario específico
             const takenAppts = await this.databaseService.appointment.findMany({
                 where: {
@@ -68,21 +68,21 @@ export class AppointmentsService {
                     year_day_id: yearDayId
                 }
             });
-    
+
             const isAppointmentOccupied = takenAppts.some((appointment) => {
                 const apptStart = new Date(appointment.appt_hour_start);
                 const apptEnd = new Date(appointment.appt_hour_end);
-    
+
                 // Verificar si el horario de la cita coincide exactamente con el horario especificado
                 const isExactStart = apptStart.getTime() === appointmentStartTime.getTime();
                 const isExactEnd = apptEnd.getTime() === appointmentEndTime.getTime();
-                const isOverlap = (appointmentStartTime > apptStart && appointmentStartTime < apptEnd) || 
-                                  (appointmentEndTime > apptStart && appointmentEndTime < apptEnd) ||
-                                  (appointmentStartTime <= apptStart && appointmentEndTime >= apptEnd);
-    
+                const isOverlap = (appointmentStartTime > apptStart && appointmentStartTime < apptEnd) ||
+                    (appointmentEndTime > apptStart && appointmentEndTime < apptEnd) ||
+                    (appointmentStartTime <= apptStart && appointmentEndTime >= apptEnd);
+
                 return isExactStart || isExactEnd || isOverlap;
             });
-    
+
             // Si hay una cita ocupando el horario especificado, retornar false, de lo contrario retornar true
             return !isAppointmentOccupied;
         } catch (error) {
@@ -125,11 +125,20 @@ export class AppointmentsService {
         }
     }
 
-    async createAppointment(createAppointment: CreateAppointmentDto): Promise<Appointment> {
+    async createAppointment(createAppointment: CreateAppointmentDto): Promise<AppointmentSuccessReturn> {
         try {
             const { user_id, year_day_id, professional_id, appt_hour_end, appt_hour_start } = createAppointment;
             const startTime = getSplittedDate(appt_hour_start);
             const endTime = getSplittedDate(appt_hour_end);
+            // buscamos usuario
+            const user = await this.usersService.getUserById(user_id);
+            if (!user) {
+                throw new NotFoundException('Usuario no encontrado')
+            }
+            const professional = await this.usersService.getUserById(professional_id);
+            if (!professional) {
+                throw new NotFoundException('Profesional no encontrado')
+            }
             // validamos que no haya conflicto de minutos y horas
             const startTimeGreaterThanEndTime = startTime.hour > endTime.hour || (startTime.hour === endTime.hour && startTime.minutes > endTime.minutes);
             if (startTimeGreaterThanEndTime) {
@@ -157,7 +166,6 @@ export class AppointmentsService {
             if (!isApptAvailable) {
                 throw new ConflictException('El horario de la cita no está disponible');
             }
-
             const newAppointment = await this.databaseService.appointment.create({
                 // many to many
                 data: {
@@ -174,7 +182,12 @@ export class AppointmentsService {
                     }
                 }
             });
-            return newAppointment;
+            const appointmentPopulated = await this.getAppointment(newAppointment.id);
+            let sendTo = user.email;
+            const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo);
+            sendTo = professional.email;
+            const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo)
+            return { appointment: newAppointment, emailResult: userMailResult.ok || professionalEmailResult.ok };
         } catch (error) {
             console.log(error);
             throw error;
@@ -184,7 +197,7 @@ export class AppointmentsService {
 
     isTimeWithinCertainInterval(timeToCheck: string | Date, workingHoursObj: AppointmentValuesAndCondition): boolean {
         const { start, end } = workingHoursObj;
-        const newDate = new Date (timeToCheck);
+        const newDate = new Date(timeToCheck);
         // convertimos las horas a minutos
         const time = newDate.getHours() * 60 + newDate.getMinutes();
 
@@ -347,7 +360,7 @@ export class AppointmentsService {
 
     }
 
-    async deleteAppoinment(appointmentId: number, userId: number) {
+    async deleteAppoinment(appointmentId: number, userId: number): Promise<AppointmentSuccessReturn> {
         try {
             const appointment = await this.getAppointment(appointmentId);
             if (appointment.client_id !== userId && appointment.professional_id !== userId) {
@@ -358,23 +371,29 @@ export class AppointmentsService {
                     id: appointmentId
                 }
             })
-
             if (!appointmentToDelete) {
                 throw new NotFoundException(`Appointment not found with id: ${appointmentId}`);
             }
-
-
-            if (userId !== appointmentToDelete.professional_id && userId !== appointmentToDelete.client_id) {
-                throw new ForbiddenException('User does not have the permission to delete the appointment');
-            }
-
             const appointmentDeleted = await this.databaseService.appointment.delete({
                 where: {
                     id: appointmentId
                 }
             })
+            const user = await this.usersService.getUserById(userId);
+            if (!user) {
+                throw new NotFoundException('Usuario no encontrado')
+            }
+            const professional = await this.usersService.getUserById(appointment.professional_id);
+            if (!professional) {
+                throw new NotFoundException('Profesional no encontrado')
+            }
+            const appointmentPopulated = await this.getAppointment(appointmentDeleted.id);
+            let sendTo = user.email;
+            const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(appointmentDeleted.client_id, appointmentDeleted.professional_id, appointmentPopulated, sendTo);
+            sendTo = professional.email;
+            const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(user.id, professional.id, appointmentPopulated, sendTo)
+            return { appointment: appointmentDeleted, emailResult: userMailResult.ok || professionalEmailResult.ok };
 
-            return appointmentDeleted;
         } catch (error) {
             throw error;
         }

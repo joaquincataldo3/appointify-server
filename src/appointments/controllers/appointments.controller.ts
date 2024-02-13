@@ -6,6 +6,7 @@ import { Appointment, User } from '@prisma/client';
 import { AuthenticationGuard } from 'src/auth/guards/authentication/authentication.guard';
 import { GetUserDecorator } from 'src/utils/decorators/user/getUser.decorator';
 import { AvailableAppointmentsInterface } from 'src/auth/interfaces/interfaces';
+import { AppointmentSuccessReturn } from '../interfaces/interfaces';
 
 
 @UseGuards(AuthenticationGuard)
@@ -41,7 +42,7 @@ export class AppointmentsController {
     }
 
     @Post('create')
-    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
+    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto): Promise<AppointmentSuccessReturn> {
         try {
             return await this.appointmentsService.createAppointment(createAppointmentDto);
         } catch (error) {

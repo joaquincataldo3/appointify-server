@@ -6,10 +6,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { TokensBlacklistModule } from 'src/tokens_blacklist/tokens_blacklist.module';
 import { YearDaysModule } from 'src/year_days/year_days.module';
 import { UsersModule } from 'src/users/users.module';
+import { MyMailerModule } from 'src/my-mailer/my-mailer.module';
 
 @Module({
   providers: [AppointmentsService],
   controllers: [AppointmentsController],
-  imports: [ProfessionalScheduleModule, TokensBlacklistModule, YearDaysModule, UsersModule, JwtModule.register({})]
+  imports: [ProfessionalScheduleModule, TokensBlacklistModule, YearDaysModule, UsersModule, JwtModule.register({}), MyMailerModule]
 })
 export class AppointmentsModule {}

@@ -54,18 +54,9 @@ export class AppointmentsController {
     @Delete('delete/:appointmentId')
     async deleteAppointment(@Param('appointmentId', ParseIntPipe) appointmentId: number, @GetUserDecorator() user: User): Promise<Appointment> {
         try {
-            const appointment = await this.appointmentsService.getAppointment(appointmentId);
             const userId = user.id;
-            if (appointment.client_id !== userId && appointment.professional_id !== userId) {
-                throw new ForbiddenException("You don't have permission to perform this action")
-            }
             return await this.appointmentsService.deleteAppoinment(appointmentId, userId);
         } catch (error) {
-            const { id } = user;
-            await this.appointmentsService.deleteAppoinment(appointmentId, id);
-            if (error instanceof NotFoundException || error instanceof ForbiddenException) {
-                throw error;
-            }
             throw new InternalServerErrorException('Unexpected server error');
         }
 

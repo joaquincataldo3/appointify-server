@@ -348,8 +348,11 @@ export class AppointmentsService {
     }
 
     async deleteAppoinment(appointmentId: number, userId: number) {
-
         try {
+            const appointment = await this.getAppointment(appointmentId);
+            if (appointment.client_id !== userId && appointment.professional_id !== userId) {
+                throw new ForbiddenException("You don't have permission to perform this action")
+            }
             const appointmentToDelete = await this.databaseService.appointment.findUnique({
                 where: {
                     id: appointmentId

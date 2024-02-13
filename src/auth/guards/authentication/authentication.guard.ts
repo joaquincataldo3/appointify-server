@@ -20,10 +20,8 @@ export class AuthenticationGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         // obtiene objeto de solicitud actual  
         const request = context.switchToHttp().getRequest();
-
         // extrae el token del objeto del request
         const token = this.extractTokenFromHeader(request);
-
         // si no está devolvemos unauthorized
         if (!token) {
             throw new UnauthorizedException();
@@ -36,17 +34,12 @@ export class AuthenticationGuard implements CanActivate {
                     secret: this.configService.get('SECRET_SESSION')
                 }
             );
-
             const isTokenInBlacklist = await this.tokenBlacklistService.findToken(token);
-
             // si está en la blacklist devolvemos unauthorized
             if (isTokenInBlacklist) {
                 throw new UnauthorizedException()
-            }
-            
+            } 
             request['user'] = {...payload, token};
-  
-
         } catch {
             throw new UnauthorizedException();
         }

@@ -69,18 +69,27 @@ export class AppointmentsService {
                 }
             });
 
+            const possibleNewApptStartTime = new Date(appointmentStartTime);
+            const posibleNewApptEndTime = new Date(appointmentEndTime);
+            // Convertir las horas y minutos a minutos totales para nuevas citas
+            const newApptStartTotalMinutes = possibleNewApptStartTime.getHours() * 60 + possibleNewApptStartTime.getMinutes();
+            const newApptEndTotalMinutes = posibleNewApptEndTime.getHours() * 60 + posibleNewApptEndTime.getMinutes();
             const isAppointmentOccupied = takenAppts.some((appointment) => {
                 const apptStart = new Date(appointment.appt_hour_start);
                 const apptEnd = new Date(appointment.appt_hour_end);
 
-                // Verificar si el horario de la cita coincide exactamente con el horario especificado
-                const isExactStart = apptStart.getTime() === appointmentStartTime.getTime();
-                const isExactEnd = apptEnd.getTime() === appointmentEndTime.getTime();
-                const isOverlap = (appointmentStartTime > apptStart && appointmentStartTime < apptEnd) ||
-                    (appointmentEndTime > apptStart && appointmentEndTime < apptEnd) ||
-                    (appointmentStartTime <= apptStart && appointmentEndTime >= apptEnd);
+                // Convertir las horas y minutos a minutos totales para citas existentes
+                const apptStartTotalMinutes = apptStart.getHours() * 60 + apptStart.getMinutes();
+                const apptEndTotalMinutes = apptEnd.getHours() * 60 + apptEnd.getMinutes();
 
-                return isExactStart || isExactEnd || isOverlap;
+
+                const isOverlapOrStartsAtEnd = 
+                (newApptStartTotalMinutes >= apptStartTotalMinutes && newApptEndTotalMinutes <= apptEndTotalMinutes) ||
+                (newApptStartTotalMinutes <= apptStartTotalMinutes && newApptEndTotalMinutes >= apptEndTotalMinutes) ||
+                (newApptStartTotalMinutes < apptStartTotalMinutes && newApptEndTotalMinutes > apptStartTotalMinutes) ||
+                (newApptStartTotalMinutes === apptEndTotalMinutes);
+
+                return isOverlapOrStartsAtEnd;
             });
 
             // Si hay una cita ocupando el horario especificado, retornar false, de lo contrario retornar true
@@ -125,7 +134,7 @@ export class AppointmentsService {
         }
     }
 
-    async createAppointment(createAppointment: CreateAppointmentDto): Promise<AppointmentSuccessReturn> {
+    async createAppointment(createAppointment: CreateAppointmentDto): Promise<Appointment> {
         try {
             const { user_id, year_day_id, professional_id, appt_hour_end, appt_hour_start } = createAppointment;
             const startTime = getSplittedDate(appt_hour_start);
@@ -182,18 +191,18 @@ export class AppointmentsService {
                     }
                 }
             });
-            const appointmentPopulated = await this.getAppointment(newAppointment.id);
-            let sendTo = user.email;
-            const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo);
-            sendTo = professional.email;
-            const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo)
-            return { appointment: newAppointment, emailResult: userMailResult.ok || professionalEmailResult.ok };
+            // mail service - not available
+            // const appointmentPopulated = await this.getAppointment(newAppointment.id);
+            // let sendTo = user.email;
+            // const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo);
+            // sendTo = professional.email;
+            // const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(newAppointment.client_id, newAppointment.professional_id, appointmentPopulated, sendTo)
+            return newAppointment;
         } catch (error) {
             console.log(error);
             throw error;
         }
     }
-
 
     isTimeWithinCertainInterval(timeToCheck: string | Date, workingHoursObj: AppointmentValuesAndCondition): boolean {
         const { start, end } = workingHoursObj;
@@ -248,7 +257,6 @@ export class AppointmentsService {
         });
         return isDuringLunch || isOverlap;
     }
-
 
     async getAvailableAppts(yearDayId: number, professionalId: number): Promise<AvailableAppointmentsInterface[]> {
         try {
@@ -360,7 +368,7 @@ export class AppointmentsService {
 
     }
 
-    async deleteAppoinment(appointmentId: number, userId: number): Promise<AppointmentSuccessReturn> {
+    async deleteAppoinment(appointmentId: number, userId: number): Promise<Appointment> {
         try {
             const appointment = await this.getAppointment(appointmentId);
             if (appointment.client_id !== userId && appointment.professional_id !== userId) {
@@ -387,12 +395,13 @@ export class AppointmentsService {
             if (!professional) {
                 throw new NotFoundException('Profesional no encontrado')
             }
-            const appointmentPopulated = await this.getAppointment(appointmentDeleted.id);
-            let sendTo = user.email;
-            const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(appointmentDeleted.client_id, appointmentDeleted.professional_id, appointmentPopulated, sendTo);
-            sendTo = professional.email;
-            const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(user.id, professional.id, appointmentPopulated, sendTo)
-            return { appointment: appointmentDeleted, emailResult: userMailResult.ok || professionalEmailResult.ok };
+            // mail service - not available 
+            // const appointmentPopulated = await this.getAppointment(appointmentDeleted.id);
+            // let sendTo = user.email;
+            // const userMailResult = await this.myMailerService.sendAppointmentCreatedEmail(appointmentDeleted.client_id, appointmentDeleted.professional_id, appointmentPopulated, sendTo);
+            // sendTo = professional.email;
+            // const professionalEmailResult = await this.myMailerService.sendAppointmentCreatedEmail(user.id, professional.id, appointmentPopulated, sendTo)
+            return appointmentDeleted;
 
         } catch (error) {
             throw error;

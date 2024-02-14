@@ -42,7 +42,7 @@ export class AppointmentsController {
     }
 
     @Post('create')
-    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto): Promise<AppointmentSuccessReturn> {
+    async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
         try {
             return await this.appointmentsService.createAppointment(createAppointmentDto);
         } catch (error) {

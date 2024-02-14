@@ -24,12 +24,12 @@ import { MyMailerModule } from './my-mailer/my-mailer.module';
     ConfigModule.forRoot({isGlobal: true}),
     MailerModule.forRootAsync({
       imports: [ConfigModule], // Importa ConfigModule para poder utilizar ConfigService
-      useFactory: async (configService) => ({
+      useFactory: async (configService: ConfigService) => ({
         transport: {
           host: 'smtp.gmail.com',
           auth: {
-            user: configService.get('MAILER_USER'), // Accede a process.env.MAIL_USER
-            pass: configService.get('MAILER_PASSWORD'), // Accede a process.env.MAIL_PASSWORD
+            user: configService.get('MAILER_EMAIL'), 
+            pass: configService.get('MAILER_PASSWORD'),
           },
           secure: false
         },

@@ -8,10 +8,9 @@ import { CreateUserDto } from 'src/auth/dto/dto';
 import { Prisma } from '@prisma/client';
 import { RecordNotFoundException } from 'src/utils/custom-exceptions/custom.exceptions';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 @UseGuards(AuthenticationGuard)
-@UseGuards(IsSameUserGuard)
 @ApiBearerAuth()
 
 @Controller('users')
@@ -19,12 +18,28 @@ export class UsersController {
 
     constructor (private usersService: UsersService) {}
 
+    @ApiParam({name: 'userId'})
     @Get('get/:userId')
     getOneUser(@Param('userId', ParseIntPipe) userId: number): Promise<User | null> {
         return this.usersService.getUserById(userId);
     }
 
+    @ApiParam({name: 'firstName'})
+    @ApiParam({name: 'lastName'})
+    @Get('get/:firstName-:lastName')   
+    getOneUserByFirstAndLastName(@Param('firstName') firstName: string, @Param('lastName') lastName: string): Promise<User[]> {
+        try {
+            return this.usersService.getUserByFirstAndLastName(firstName, lastName);
+        } catch (error) {
+            if(error instanceof Prisma.PrismaClientKnownRequestError && error.code === PrismaNotFoundCode) {
+                throw new RecordNotFoundException()
+            } 
+            throw new InternalServerErrorException('Server error');
+        }
+    }
+
     @Put('update/:userId')
+    @UseGuards(IsSameUserGuard)
     updateOneUser(@Param('userId', ParseIntPipe) userId: number, updateUserDto: CreateUserDto): Promise<User> {
         try {
             return this.usersService.updateUser(userId, updateUserDto);
@@ -37,6 +52,7 @@ export class UsersController {
     }
 
     @Delete('delete/:userId')
+    @UseGuards(IsSameUserGuard)
     async deleteUser(@Param('userId', ParseIntPipe) userId: number): Promise<RequestSuccessNoEntity> {
         try {
             return await this.usersService.deleteUser(userId);

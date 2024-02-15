@@ -26,7 +26,6 @@ export class AuthService {
 
 
     async signToken(signTokenObject: SignTokenInterface): Promise<string> {
-
         try {
             const secret = this.configService.get<string>('SECRET_SESSION');
             // devuelve un token

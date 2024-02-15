@@ -34,11 +34,10 @@ export class AppointmentsController {
 
     }
 
-    @ApiParam({name: 'yearId'})
-    @Get('booked/:yearId')
-    async get(@Param('yearId') yearDayId: string, @GetUserDecorator() user: User): Promise<Appointment[]> {
-        const yearIdNumber = Number(yearDayId);
-        return await this.appointmentsService.getBookedAppts(yearIdNumber, user);
+    @ApiParam({name: 'userId'})
+    @Get('booked/:userId')
+    async get(@Param('userId', ParseIntPipe) userId: number): Promise<Appointment[]> {
+        return await this.appointmentsService.getBookedAppts(userId);
     }
 
     @Post('create')

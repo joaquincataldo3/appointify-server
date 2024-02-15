@@ -338,9 +338,13 @@ export class AppointmentsService {
 
     }
 
-    async getBookedAppts(yearDayId: number, user: User): Promise<Appointment[]> {
+    async getBookedAppts(userId: number): Promise<Appointment[]> {
 
-        let bookedAppointments: Appointment[] = []
+        let bookedAppointments: Appointment[] = [];
+        const user = await this.usersService.getUserById(userId);
+        if(!user) {
+            throw new NotFoundException('User not found');
+        }
         if (user.user_role_id === 1) {
             bookedAppointments = await this.databaseService.appointment.findMany({
                 where: {
@@ -365,7 +369,6 @@ export class AppointmentsService {
             })
         }
         return bookedAppointments;
-
     }
 
     async deleteAppoinment(appointmentId: number, userId: number): Promise<Appointment> {

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { User } from '@prisma/client';
+import { NotFoundError } from 'rxjs';
 import { CreateUserDto } from 'src/auth/dto/dto';
 import { DatabaseService } from 'src/database/services/database.service';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
@@ -64,7 +65,37 @@ export class UsersService {
         } catch (error) {
             throw error;
         }
+    }
 
+    async getUserByFirstAndLastName(firstName: string, lastName: string): Promise<User[]> {
+        try {
+            const userExists = await this.databaseService.user.findMany({
+                where: {
+                    AND: [
+                        {first_name: firstName},
+                        {last_name: lastName}
+                    ]     
+                 },
+                include: {
+                    professionalAppointments: true,
+                    clientAppointments: true,
+                    schedule: true
+                }
+            })
+            if (userExists.length === 0) {
+                throw new NotFoundException('User not found');
+            }
+            let user = userExists[0];
+            if(user.user_role_id === 1) {
+                delete user.clientAppointments;
+            } else {
+                delete user.professionalAppointments;
+                delete user.schedule;
+            }
+            return userExists;
+        } catch (error) {
+            throw error;
+        }
     }
 
     async updateUser(userId: number, updateUserDto: CreateUserDto): Promise<User>{

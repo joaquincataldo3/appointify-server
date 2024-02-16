@@ -2,9 +2,6 @@ import { Appointment, User } from "@prisma/client"
 
 export interface SignTokenInterface {
     id: number
-    username: string
-    email: string,
-    user_role_id: number
 }
 
 export interface UserSignInReturn {

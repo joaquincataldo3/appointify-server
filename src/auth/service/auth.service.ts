@@ -10,6 +10,7 @@ import { TokensBlacklistService } from 'src/tokens_blacklist/services/tokens_bla
 import { DatabaseService } from 'src/database/services/database.service';
 import { AuthenticationGuard } from '../guards/authentication/authentication.guard';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +23,7 @@ export class AuthService {
         private databaseService: DatabaseService,
     ) { }
 
-    private cookieName = 'access_token';
+    private cookieName = 'user_access_token';
 
 
     async signToken(signTokenObject: SignTokenInterface): Promise<string> {
@@ -71,6 +72,19 @@ export class AuthService {
         }
     }
 
+    async getCookie(req: Request): Promise<User | null> {
+        try {
+            const cookies = req.cookies.user_access_token;
+            if(!cookies) {
+                return null
+            }
+            const user = await this.usersService.getUserById(cookies.id);
+            return user;
+        } catch (error) {
+            throw error;
+        }
+    }
+
     async signIn(signInDto: UserSignInDto, res: Response): Promise<UserSignInReturn> {
         const { email, password } = signInDto;
         const emailWithNoCapitalLetters = email.toLowerCase();
@@ -85,14 +99,9 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials')
         }
         const { username, id, first_name, last_name, user_role_id } = userFound;
-        const signTokenObject: SignTokenInterface = {
-            email,
-            username,
-            id,
-            user_role_id
-        }
-        const token = await this.signToken(signTokenObject);
-        res.cookie(this.cookieName, { ...signTokenObject, token }, { maxAge: 3600000 });
+        const signTokenPayload: SignTokenInterface = { id } 
+        const token = await this.signToken(signTokenPayload);
+        res.cookie(this.cookieName, { ...signTokenPayload, token }, { maxAge: 3600000 });
         const userSignInReturn: UserSignInReturn = {
             email,
             username,

@@ -1,9 +1,9 @@
-import { Body, ConflictException, Controller, Get, HttpCode, InternalServerErrorException, NotFoundException, Post, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
+import { Body, ConflictException, Controller, Get, HttpCode, InternalServerErrorException, NotFoundException, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../service/auth.service';
 import { CreateUserDto, UserSignInDto } from '../dto/dto';
 import { AuthenticationGuard } from '../guards/authentication/authentication.guard';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { GetUserDecorator } from '../../utils/decorators/user/getUser.decorator';
 import { RequestUser, UserSignInReturn } from '../interfaces/interfaces';
 import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.interfaces';
@@ -26,9 +26,19 @@ export class AuthController {
             if(error instanceof NotFoundException) {
                 throw error;
             }   
-            throw new InternalServerErrorException(serverErrorReturn)
+            throw new InternalServerErrorException(serverErrorReturn);
         }
         
+    }
+
+    @Get('check-cookie')
+    async checkCookie (@Req() req: Request) {
+        try {
+            return await this.authService.getCookie(req);
+        } catch (error) {
+            console.log(error)
+            throw new InternalServerErrorException(serverErrorReturn);
+        }
     }
 
     @Post('sign-in')
@@ -36,19 +46,16 @@ export class AuthController {
         try {
             return await this.authService.signIn(signInDto, res)
         } catch (error) {
-
+            console.log(error)
             if (error instanceof NotFoundException) {
-                throw error;
+                throw new NotFoundException(error);
             } else if (error instanceof UnauthorizedException) {
-                throw error;
+                throw new UnauthorizedException(error);
             }
-
             throw new InternalServerErrorException(serverErrorReturn)
         }
         
     }
-
-
 
     @Post('sign-up')
     @HttpCode(201)

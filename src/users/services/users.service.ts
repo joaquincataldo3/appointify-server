@@ -9,7 +9,7 @@ import { RequestSuccessNoEntity } from 'src/utils/global-interfaces/global.inter
 @Injectable()
 export class UsersService {
 
-    constructor(private databaseService: DatabaseService) { }
+    constructor(private databaseService: DatabaseService) {}
 
     async getUserById(userId: number): Promise<User | null> {
 
@@ -33,6 +33,7 @@ export class UsersService {
             delete user.professionalAppointments;
             delete user.schedule;
         }
+        delete user.password;
         return user;
     }
 
